@@ -49,9 +49,9 @@ export const roi = defineFigure({
     scene.box(X, ey, 4, SIZE, SIZE, HEIGHT, tone);
     scene.rect(X - 10, ey - 2.5, X + 10, ey + 2.5, 4 + HEIGHT + 0.05, "muted");
     const at = (u: number, v: number): Vec3 => [X + u, face, 4 + HEIGHT / 2 + v];
-    scene.polyline([at(-12, 9), at(-12, -10), at(12, -10)], "faint");
-    const chart = state === "loading" ? "hi" : state === "success" ? "ok" : state === "error" ? "err" : "muted";
-    scene.polyline([at(-10, -4 * T), at(-3, -2 * T), at(3, 3 * T - 1), at(10, 8 * T)], chart, { bold: true });
+    scene.polyline([at(-15, 13), at(-15, -13), at(15, -13)], "muted");
+    const chart = state === "loading" ? "hi" : state === "success" ? "ok" : state === "error" ? "err" : "base";
+    scene.polyline([-12, -4, 4, 13].map((u, i) => at(u, -1 + T * [-11, -4, 3, 13][i]!)), chart, { bold: true });
 
     if (state === "loading") {
       const f = smoothstep(ctx.loop(1.1));

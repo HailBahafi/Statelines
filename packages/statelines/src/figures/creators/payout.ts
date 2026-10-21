@@ -40,7 +40,7 @@ export const payout = defineFigure({
 
     const items: { depth: number; draw: () => void }[] = [];
     CREATORS.forEach(([x, y], k) => {
-      const failed = state === "error" && k === 1;
+      const failed = state === "error" && k === 0;
       const done = state === "success" || (state === "error" && !failed) || q > k + 1;
       const P = m.paid[k]!.to(done ? 1 : 0).value;
       const [sx, sy] = stackAt([x, y]);
