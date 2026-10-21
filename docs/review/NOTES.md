@@ -32,3 +32,11 @@ errors, `NaN`/`undefined` in the markup and drawings that leave the viewBox.
 - Folder: stands on a plate; files carry title lines above the flap; empty shows a dashed file inside the open folder; the error file hangs higher; verdict token beside the folder instead of a mark floating above it.
 - Table: rows were rows of keycaps and read as a keyboard; each row is now one strip with column rules and a value line per cell, a bold header row, and the arriving row in the loading tone; the token sits beside the failing or last row.
 - Database: stack stands on a plate; each disk has a status light that goes active while loading (a snapshot between lifts read as idle before); the error disk slides further off the stack; token on the top disk.
+
+## Communication
+
+- Inbox: blank slabs became letters (the shared `envelope`); a falling letter is drawn in the loading tone; empty shows a dashed letter on the tray floor instead of one floating above; verdict token on the newest letter. Doc and label now say letters.
+- Send: the floating dashed arc is gone; the far tray is now a mailbox on a post with a slot and a flag that rises on delivery; success shows the letter standing in the slot; error drops the envelope short onto the plate between the two. Label updated to name the mailbox.
+- Chat: the phone was a slab lying flat and read as a board; it now stands upright on a plate, with bubbles standing proud of its screen, typing dots in the loading bubble, and the verdict token on the plate in front.
+- Alerts: stack stands on a plate; each card has an app icon, a bold title on the top card and a detail line; the unread badge sits on the card's far corner and becomes the verdict token on success and error.
+- Team: people stand on a round plate with a pad per seat and links that stop short of host and pads; the failing seat's link, pad and person turn red; the token sits in the gap between seats nearest the viewer, for any seat count.

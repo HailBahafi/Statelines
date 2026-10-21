@@ -1,16 +1,18 @@
 import { defineFigure } from "../../core/define";
 import { smoothstep } from "../../engine/math";
-import { tray } from "../shapes";
+import type { Tone } from "../../engine/scene";
+import { badge, envelope, tray } from "../shapes";
 
 const MAX = 6;
 const PITCH = 5;
 const WALL_TOP = 19;
+const SCALE = 1.5;
 
-/** Cards drop into a tray. Use for inboxes, queues and received items. `count`: cards at rest, 0–6. */
+/** Letters drop into a tray. Use for inboxes, queues and received items. `count`: letters at rest, 0–6. */
 export const inbox = defineFigure({
   name: "Inbox",
-  label: "Cards dropping into a tray",
-  offset: -12,
+  label: "Letters dropping into a tray",
+  offset: -6,
   setup: ({ spring }) => ({
     cards: Array.from({ length: MAX + 1 }, (_, k) => ({
       z: spring(6 + k * PITCH), x: spring(0), y: spring(0), opacity: spring(k < 3 ? 1 : 0, 140, 22),
@@ -28,7 +30,8 @@ export const inbox = defineFigure({
         let z = 6 + k * PITCH, x = 0, y = 0, opacity = k < resting ? 1 : 0;
         if (state === "idle" && k === resting - 1) { z += ctx.hover * 18; x = lean.x; y = lean.y; }
         if ((state === "success" || state === "error") && k === arriving) opacity = 1;
-        if (state === "error" && k === arriving) { x = 38; y = -12; z = 48; }
+        // Rejected: the newest letter bounces off and hangs above the tray's edge.
+        if (state === "error" && k === arriving) { x = 40; y = -14; z = 46; }
         if (state === "empty") opacity = 0;
         if (state === "loading") {
           const total = arriving + 1, q = ctx.progress(1.2 + total * 0.35);
@@ -49,15 +52,15 @@ export const inbox = defineFigure({
         const Z = card.z.to(z).value, X = card.x.to(x).value, Y = card.y.to(y).value, O = card.opacity.to(opacity).value;
         const newest = k === arriving;
         const bad = state === "error" && newest;
-        const tone = bad ? "err" : state === "success" && newest ? "ok" : "base";
+        const falling = state === "loading" && Z > 6 + k * PITCH + 2;
+        const tone: Tone = bad ? "err" : state === "success" && newest ? "ok" : falling ? "hi" : "base";
         const draw = () => {
-          scene.box(X + (bad ? shake : 0), Y, Z, 84, 54, 3, tone, O);
-          if (state === "success" && newest) scene.check(X, Y, Z + 3, "ok", ctx.fade());
-          if (bad) scene.cross(X + shake, Y, Z + 3, "err", ctx.fade());
+          envelope(scene, X + (bad ? shake : 0), Y, Z, tone, O, SCALE);
+          if (newest) badge(scene, X + (bad ? shake : 0), Y - 2, Z + 3, state, ctx.fade(), 11);
         };
         if (Z + 3 > WALL_TOP) above.push(draw); else draw();
       });
-      if (state === "empty") above.push(() => scene.box(lean.x, lean.y, 40, 84, 54, 3, "ghost"));
+      if (state === "empty") envelope(scene, 0, 0, 6, "ghost", undefined, SCALE);
     };
 
     tray(scene, 120, 84, 16, 0, "base", drawCards);
