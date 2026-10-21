@@ -24,3 +24,11 @@ errors, `NaN`/`undefined` in the markup and drawings that leave the viewBox.
 - Tracking: rail moved to the front with a tracker cart riding it and a tether to the post it reads; bars sit behind the posts so nothing crosses them; error stalls on the third post with the remaining bars left flat.
 - Payout: the coin stack treasury is now a vault with a round door; creators stand on pads with their stacks beside them and routes run clear of every object; the idle coin is no longer drawn in the loading tone; error breaks the longest route with a token in the gap so it hides nothing.
 - Roi: removed the floating arrow and the sparkle (the generated-content mark, misused here); the campaign is a block with a slot and a trend on its face that rises, or falls on a loss; the verdict token caps the return stack. Open: the face chart is subtle at 200 px because the side face's own slope cancels a gentle rise; the stacks carry the idea without it.
+
+## Files
+
+- Upload: the flat slab is now an open tray (the existing `tray` shape) on a plate, with a dashed landing mark inside; the sheet drops below the rim and lands; success keeps the sheet in the tray with a token on it instead of a bare check on an empty slab; error hangs the sheet above the zone; the bar runs on the plate in front.
+- Download: storage is a cabinet with three drawers and a slot, on one plate with a rimmed tray; the two were moved apart across the frame so the sheet's arc travels sideways instead of straight down; error leaves the sheet hanging mid-flight.
+- Folder: stands on a plate; files carry title lines above the flap; empty shows a dashed file inside the open folder; the error file hangs higher; verdict token beside the folder instead of a mark floating above it.
+- Table: rows were rows of keycaps and read as a keyboard; each row is now one strip with column rules and a value line per cell, a bold header row, and the arriving row in the loading tone; the token sits beside the failing or last row.
+- Database: stack stands on a plate; each disk has a status light that goes active while loading (a snapshot between lifts read as idle before); the error disk slides further off the stack; token on the top disk.
