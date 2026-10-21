@@ -1,13 +1,12 @@
 import { defineFigure } from "../../core/define";
 import { pointAlong, sliceAlong, vertexFraction, type Point2 } from "../../engine/path";
 import type { Tone, Vec3 } from "../../engine/scene";
-import { badge, parcel } from "../shapes";
+import { parcel } from "../shapes";
 
 const ROUTE: Point2[] = [[-60, 26], [-14, 26], [-14, -18], [52, -18]];
 const STOP = vertexFraction(ROUTE, 2);
 const DEPOT = [-60, -4] as const;
 const HOME = [52, -46] as const;
-const MARK = [24, 14] as const;
 const lifted = (points: Point2[], z: number): Vec3[] => points.map(([x, y]) => [x, y, z]);
 
 /** A parcel travels a route from a depot to a home. Use for shipping, tracking and deliveries. */
@@ -57,6 +56,5 @@ export const shipping = defineFigure({
 
     const [x, y] = pointAlong(ROUTE, T);
     parcel(scene, x + shake, y, 8 + L, live);
-    badge(scene, MARK[0], MARK[1], 4, state, ctx.fade());
   },
 });

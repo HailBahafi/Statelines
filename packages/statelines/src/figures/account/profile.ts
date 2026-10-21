@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { TAU, clamp } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge, person } from "../shapes";
+import { person } from "../shapes";
 
 const AVATAR = [-12, -26] as const;
 const CARD = { w: 96, d: 120 };
@@ -57,6 +57,5 @@ export const profile = defineFigure({
     const px = ax + S * 26 + shake, py = ay + S * 26;
     person(scene, px, py, TOP + 2 * (1 - clamp(S)) + L, who, undefined, 1.2);
 
-    badge(scene, 34, -44, TOP, state, ctx.fade(), 12);
   },
 });

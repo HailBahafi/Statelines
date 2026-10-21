@@ -1,6 +1,6 @@
 import { defineFigure } from "../../core/define";
 import type { Tone, Vec3 } from "../../engine/scene";
-import { badge, frontArc } from "../shapes";
+import { frontArc } from "../shapes";
 
 const PHONE = { w: 68, d: 10, h: 120 };
 const FACE = PHONE.d / 2;
@@ -60,6 +60,5 @@ export const chat = defineFigure({
       }
     });
 
-    badge(scene, 0, 26, 4, state, ctx.fade());
   },
 });

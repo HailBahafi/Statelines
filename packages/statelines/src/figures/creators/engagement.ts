@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { clamp, wrap } from "../../engine/math";
 import type { Tone, Vec3 } from "../../engine/scene";
-import { badge, frontArc, heart } from "../shapes";
+import { frontArc, heart } from "../shapes";
 
 const POST = { x: -18, y: 0, w: 58, d: 5, h: 78 };
 const FRONT = POST.y + POST.d / 2 + 0.05;
@@ -56,6 +56,5 @@ export const engagement = defineFigure({
     }
     const big = m.big.to(state === "success" ? 1 : state === "idle" ? ctx.hover * 0.7 : 0).value;
     if (big > 0.02) heart(scene, px, POST.y, h + 24, 26 * big, state === "success" ? "ok" : "base", Math.min(1, big * 1.5));
-    badge(scene, POST.x, 20, 4, state, ctx.fade());
   },
 });

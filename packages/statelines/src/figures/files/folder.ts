@@ -1,7 +1,6 @@
 import { defineFigure } from "../../core/define";
 import { smoothstep } from "../../engine/math";
 import type { Tone, Vec3 } from "../../engine/scene";
-import { badge } from "../shapes";
 
 const FILE_Y = [-26, -15, -4];
 const BASE = 4;
@@ -23,7 +22,7 @@ export const folder = defineFigure({
     const angle = m.open.to(open).value;
     const shell: Tone = state === "loading" ? "base" : ctx.verdict();
 
-    scene.box(14, 0, 0, 152, 92, BASE, "base");
+    scene.box(0, 0, 0, 126, 92, BASE, "base");
     scene.box(0, 0, BASE, 110, 76, 6, shell);
     scene.box(0, -36, FLOOR, 110, 4, 64, shell);
     scene.box(-34, -36, FLOOR + 64, 34, 4, 7, shell);
@@ -55,6 +54,5 @@ export const folder = defineFigure({
     const front: Vec3[] = [[-55, 38, FLOOR], [55, 38, FLOOR], [55, reach, top], [-55, reach, top]];
     scene.panel(front, shell);
 
-    badge(scene, 72, 6, BASE, state, ctx.fade());
   },
 });

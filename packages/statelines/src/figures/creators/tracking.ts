@@ -1,7 +1,6 @@
 import { defineFigure } from "../../core/define";
 import { clamp, falloff } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge } from "../shapes";
 
 const MAX = 7;
 const SPAN = 132;
@@ -30,7 +29,7 @@ export const tracking = defineFigure({
     const C = m.cursor.to(cursor).value, cx = -SPAN / 2 + SPAN * C;
     const stuck = state === "error" ? 2 : -1;
 
-    scene.box(0, 0, 0, SPAN + 24, 94, 4, "base");
+    scene.box(0, -4, 0, SPAN + 24, 72, 4, "base");
     // The rail runs along the front, and the tracker rides it.
     scene.box(0, RAIL, 4, SPAN + 8, 6, 3, empty ? "ghost" : "muted");
 
@@ -57,7 +56,5 @@ export const tracking = defineFigure({
       scene.box(x, RAIL, 7, 10, 10, 6, tone);
       scene.line([x, RAIL - 5, 10], [x, POSTS + tile / 2 + 2, 7.05], tone === "base" ? "muted" : tone);
     }
-    const bx = state === "success" ? -SPAN / 2 + 14 : clamp(cx, -SPAN / 2, SPAN / 2) - 20;
-    badge(scene, bx, 34, 4, state, ctx.fade());
   },
 });

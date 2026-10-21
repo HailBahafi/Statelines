@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { bump, lerp } from "../../engine/math";
 import type { Tone, Vec3 } from "../../engine/scene";
-import { badge, coins, frontArc, person } from "../shapes";
+import { coins, frontArc, person } from "../shapes";
 
 const VAULT: [number, number] = [-34, -34];
 const VAULT_S = 40;
@@ -51,7 +51,6 @@ export const payout = defineFigure({
         const mid = (30 + len - PAD - 3) / 2;
         scene.line(from, [vx + ux * (mid - 14), vy + uy * (mid - 14), 4.05], "err");
         scene.line([vx + ux * (mid + 14), vy + uy * (mid + 14), 4.05], to, "err");
-        items.push({ depth: 999, draw: () => badge(scene, vx + ux * mid + shake, vy + uy * mid, 4, state, ctx.fade(), 11) });
       } else if (!empty) {
         scene.line(from, to, P > 0.5 ? (state === "success" ? "ok" : "muted") : "faint");
       }
@@ -69,6 +68,5 @@ export const payout = defineFigure({
     });
     items.sort((a, b) => a.depth - b.depth).forEach(i => i.draw());
 
-    if (state === "success") badge(scene, vx, vy, top, state, ctx.fade());
   },
 });

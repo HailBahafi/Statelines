@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { clamp, lerp, smoothstep } from "../../engine/math";
 import type { Tone, Vec3 } from "../../engine/scene";
-import { badge, envelope } from "../shapes";
+import { envelope } from "../shapes";
 
 const FROM = [-52, 34] as const;
 const TO = [50, -34] as const;
@@ -59,13 +59,11 @@ export const send = defineFigure({
     if (state === "success" && P > 0.97) {
       // Delivered: the envelope stands half out of the slot.
       scene.box(tx, ty, TOP - 6, 3, 26, 18, "ok");
-      badge(scene, FROM[0], FROM[1], START, state, ctx.fade());
       return;
     }
     const [ax, ay, az] = at(P);
     const x = ax + (idle ? lean.x : 0), y = ay + (idle ? lean.y : 0), z = lerp(az, 4, D) + (idle ? ctx.hover * 12 : 0);
     // On error it falls short and lies on the plate between the two.
     envelope(scene, x + shake, y, z, state === "loading" ? "hi" : ctx.verdict(), opacity);
-    if (state === "error" && D > 0.95) badge(scene, x + shake, y, z + 3, state, ctx.fade(), 11);
   },
 });

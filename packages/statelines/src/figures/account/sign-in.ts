@@ -1,7 +1,6 @@
 import { defineFigure } from "../../core/define";
 import { clamp } from "../../engine/math";
 import type { Tone, Vec3 } from "../../engine/scene";
-import { badge } from "../shapes";
 
 const HINGE = -31;
 const WIDTH = 62;
@@ -58,6 +57,5 @@ export const signIn = defineFigure({
     // Refused: a bar drops across the door at handle height.
     if (B > 0.01 && !empty) scene.box(shake * 0.5, WALL.d / 2 + 2, 70 - B * 26, 2 * WALL.inner + 14, 3, 5, "err");
 
-    badge(scene, MAT.x, MAT.y, 6, state, ctx.fade(), 12);
   },
 });

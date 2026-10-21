@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { TAU, falloff } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge, person } from "../shapes";
+import { person } from "../shapes";
 
 const PLATE = 96;
 const RINGS = [{ r: 34, n: 9 }, { r: 50, n: 13 }, { r: 66, n: 17 }];
@@ -15,8 +15,6 @@ const inSector = (a: number) => {
   const w = ((a % TAU) + TAU) % TAU - Math.PI;
   return w > SECTOR[0]! && w < SECTOR[1]!;
 };
-/** The verdict badge sits on the plate's near rim, clear of the crowd. */
-const BADGE = 82 / Math.SQRT2;
 
 /** A creator inside rings of followers, with the core audience lit. Use for audience insights and demographics. */
 export const audience = defineFigure({
@@ -62,6 +60,5 @@ export const audience = defineFigure({
     } });
     items.sort((a, b) => a.depth - b.depth).forEach(i => i.draw());
 
-    badge(scene, BADGE, BADGE, 4, state, ctx.fade());
   },
 });

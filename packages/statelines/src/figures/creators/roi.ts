@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { lerp, smoothstep } from "../../engine/math";
 import type { Tone, Vec3 } from "../../engine/scene";
-import { badge, coins } from "../shapes";
+import { coins } from "../shapes";
 
 const SPEND: [number, number] = [-58, 20];
 const ENGINE: [number, number] = [0, 0];
@@ -59,7 +59,6 @@ export const roi = defineFigure({
     }
 
     const stack = Math.max(1, O);
-    const top = coins(scene, RETURN[0], RETURN[1], 4, stack, "base", state === "loading" ? "hi" : state === "idle" ? "base" : ctx.verdict(), R);
-    badge(scene, RETURN[0], RETURN[1], top, state, ctx.fade());
+    coins(scene, RETURN[0], RETURN[1], 4, stack, "base", state === "loading" ? "hi" : state === "idle" ? "base" : ctx.verdict(), R);
   },
 });

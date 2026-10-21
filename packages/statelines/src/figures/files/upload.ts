@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { clamp, smoothstep } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge, sheet, tray } from "../shapes";
+import { sheet, tray } from "../shapes";
 
 const FLOOR = 4 + 3;
 const WALL = 14;
@@ -47,7 +47,6 @@ export const upload = defineFigure({
     const drawSheet = () => {
       if (empty) scene.box(0, 0, FLOOR, 56, 44, 2, "ghost");
       else sheet(scene, X, Y, Z, 56, 44, tone);
-      if (Z < FLOOR + 6) badge(scene, X, Y, Z + 2, state, ctx.fade(), 11);
     };
 
     scene.box(0, 10, 0, 132, 116, 4, "base");
@@ -63,7 +62,6 @@ export const upload = defineFigure({
     });
     if (!inside) {
       drawSheet();
-      if (state === "error") badge(scene, X, Y, Z + 2, state, ctx.fade(), 11);
     }
   },
 });

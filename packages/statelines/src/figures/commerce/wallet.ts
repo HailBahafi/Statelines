@@ -1,6 +1,5 @@
 import { defineFigure } from "../../core/define";
 import type { Tone } from "../../engine/scene";
-import { badge } from "../shapes";
 
 const MAX = 10;
 const PITCH = 6;
@@ -35,7 +34,6 @@ export const wallet = defineFigure({
     }
     const slipped = state === "error" ? coins - 1 : -1;
     const [sx, sy] = STACK;
-    let topZ = 4;
 
     scene.box(4, 0, 0, 160, 104, 4, "base");
 
@@ -58,16 +56,12 @@ export const wallet = defineFigure({
       const isTop = k === (slipped >= 0 ? slipped - 1 : count - 1);
       const tone: Tone = isTop ? (state === "loading" ? "hi" : ctx.verdict()) : "base";
       scene.cylinder(sx + X, sy + Y, Z, R, 5, tone, O);
-      if (isTop) topZ = Z + 5;
     });
 
     if (slipped >= 0) {
       const c = m.coins[slipped]!;
       const cx = sx + c.x.value + shake, cy = sy + c.y.value;
       scene.cylinder(cx, cy, c.z.value, R, 5, "err");
-      badge(scene, cx, cy, c.z.value + 5, state, ctx.fade(), 12);
-    } else {
-      badge(scene, sx, sy, topZ, state, ctx.fade(), 14);
     }
   },
 });

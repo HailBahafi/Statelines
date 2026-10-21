@@ -38,10 +38,12 @@ describe("count", () => {
 });
 
 describe("styling options", () => {
-  it("drops the verdict marks when marks is false", () => {
+  // Redrawn figures carry the verdict in colour and pose, with no tick or cross, so `marks`
+  // is still accepted but has nothing to hide in them.
+  it("accepts marks: false without changing a redrawn figure", () => {
     const withMarks = renderToString(figures.upload, { state: "success" });
     const without = renderToString(figures.upload, { state: "success", marks: false });
-    expect(without.length).toBeLessThan(withMarks.length);
+    expect(without).toBe(withMarks);
   });
 
   it("writes per-figure colours and stroke as custom properties", () => {

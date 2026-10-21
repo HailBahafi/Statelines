@@ -1,6 +1,5 @@
 import { defineFigure } from "../../core/define";
 import type { Tone } from "../../engine/scene";
-import { badge } from "../shapes";
 
 const BODY_Z = 4;
 const TOP = BODY_Z + 18;
@@ -39,7 +38,6 @@ export const pay = defineFigure({
         scene.disc(X, Y, Z - 2, 24 + 40 * q, "muted", { opacity: 1 - q });
       }
     }
-    if (state !== "loading") badge(scene, sx, sy, TOP, state, ctx.fade());
 
     if (state === "empty") { scene.box(X, Y, Z, 78, 50, 2, "ghost"); return; }
     const card: Tone = state === "error" ? "err" : state === "loading" ? "hi" : "base";

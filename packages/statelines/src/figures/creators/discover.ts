@@ -53,7 +53,5 @@ export const discover = defineFigure({
     scene.disc(X + shake, Y, Z, 21, lens, { plate: true });
     scene.disc(X + shake, Y, Z, 16, "faint");
     scene.box(X + shake + 32, Y, Z - 2, 22, 6, 4, lens);
-    if (state === "success") scene.check(X, Y, Z, "ok", ctx.fade());
-    if (state === "error") scene.cross(X + shake, Y, Z, "err", ctx.fade());
   },
 });

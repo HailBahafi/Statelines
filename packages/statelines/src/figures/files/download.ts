@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { bump, lerp, smoothstep } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge, sheet } from "../shapes";
+import { sheet } from "../shapes";
 
 const STORE: [number, number] = [-46, 6];
 const STORE_S = 54;
@@ -58,6 +58,5 @@ export const download = defineFigure({
 
     if (empty) { scene.box(tx, ty, TRAY_Z, 44, 34, 2, "ghost"); return; }
     sheet(scene, x, y, z, 44, 34, tone);
-    badge(scene, x, y, z + 2, state, ctx.fade(), 11);
   },
 });

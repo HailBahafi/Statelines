@@ -1,7 +1,6 @@
 import { defineFigure } from "../../core/define";
 import { bump, smoothstep } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge } from "../shapes";
 
 const MAX = 4;
 const cardY = (k: number) => 18 - k * 14;
@@ -53,14 +52,10 @@ export const alerts = defineFigure({
       scene.cylinder(bx, by(cardY(0)), 7, 9, 6, "ghost");
       return;
     }
-    // The unread badge sits on the top card's far corner; on a verdict it becomes the verdict token.
-    if (state === "success" || state === "error") {
-      badge(scene, bx + (state === "error" ? shake : 0), by(topY), topZ, state, ctx.fade());
-      return;
-    }
+    // The unread badge sits on the top card's far corner and takes the verdict's colour.
     const pulse = state === "loading" ? bump(q / 0.5) : 0;
     const B = m.badge.to(pulse * 8).value;
-    scene.cylinder(bx, by(topY), topZ + B, 9, 6, state === "loading" ? "hi" : "base");
+    scene.cylinder(bx + (state === "error" ? shake : 0), by(topY), topZ + B, 9, 6, state === "loading" ? "hi" : ctx.verdict());
     scene.disc(bx, by(topY), topZ + B + 6.05, 3, "muted", { fill: true });
   },
 });

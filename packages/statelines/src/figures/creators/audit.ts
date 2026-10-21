@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { clamp, wrap } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge, person } from "../shapes";
+import { person } from "../shapes";
 
 const N = 7;
 const SPAN = 140;
@@ -64,7 +64,5 @@ export const audit = defineFigure({
     items.sort((a, b) => a.depth - b.depth).forEach(i => i.draw());
     scene.box(shake, 0, ARCH + 4, 8, 44, 5, gate);
 
-    const bx = state === "success" ? -40 : 34;
-    badge(scene, bx, 24, 4, state, ctx.fade());
   },
 });

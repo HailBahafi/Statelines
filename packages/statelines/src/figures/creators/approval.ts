@@ -1,7 +1,6 @@
 import { defineFigure } from "../../core/define";
 import { bump, clamp, lerp, smoothstep } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge } from "../shapes";
 
 const STAGES = [-56, 0, 56];
 const POST_W = 26;
@@ -12,7 +11,7 @@ const PAD = 18;
 export const approval = defineFigure({
   name: "Approval",
   label: "A post moving through draft, review and approved",
-  offset: 4,
+  offset: 16,
   setup: ({ spring }) => ({ stage: spring(0, 90, 16), lift: spring(0) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
@@ -30,7 +29,7 @@ export const approval = defineFigure({
     if (state === "error") stage = 1;
     const S = clamp(m.stage.to(stage).value, 0, 2), L = m.lift.to(state === "idle" ? ctx.hover * 10 : 0).value;
 
-    scene.box(0, 0, 0, 176, 92, 4, "base");
+    scene.box(0, 0, 0, 176, 64, 4, "base");
     scene.line([STAGES[0]!, 0, 4.05], [STAGES[2]!, 0, 4.05], empty ? "ghost" : "faint", { bold: true });
     STAGES.forEach((x, k) => {
       const tone: Tone = empty ? "ghost"
@@ -60,7 +59,5 @@ export const approval = defineFigure({
     scene.polyline([[x - 9, face, z + 14], [x - 3, face, z + 24], [x + 2, face, z + 19], [x + 9, face, z + 28]], "muted");
     scene.line([x - 9, face, z + 8], [x + 5, face, z + 8], "muted");
 
-    const bx = state === "success" ? STAGES[2]! : STAGES[1]!;
-    badge(scene, bx, 32, 4, state, ctx.fade());
   },
 });

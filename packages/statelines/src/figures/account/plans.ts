@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { clamp } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge, coins } from "../shapes";
+import { coins } from "../shapes";
 
 const X = [-54, 0, 54];
 const H = [28, 42, 56];
@@ -54,7 +54,5 @@ export const plans = defineFigure({
       scene.cylinder(cx, cy, cz, 10, 4, "err");
     }
 
-    const bx = chosen >= 0 ? X[chosen]! + 14 : 0;
-    badge(scene, bx, 26, 4, state, ctx.fade(), 12);
   },
 });

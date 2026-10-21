@@ -1,12 +1,11 @@
 import { defineFigure } from "../../core/define";
 import { falloff } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge } from "../shapes";
 
 const MAX_ROWS = 8;
 const PITCH = 15;
 const ROW_W = 104;
-const ROW_X = -12;
+const ROW_X = 0;
 /** Column edges, as offsets from the row's left end. The first column is wider, like a name column. */
 const EDGES = [36, 60, 84];
 const CELLS: [number, number][] = [[4, 28], [40, 54], [64, 78], [88, 100]];
@@ -36,7 +35,7 @@ export const table = defineFigure({
     }
     const left = ROW_X - ROW_W / 2;
 
-    scene.box(0, 0, 0, 152, rows * PITCH + 22, 4, "base");
+    scene.box(0, 0, 0, 126, rows * PITCH + 22, 4, "base");
 
     m.rows.forEach((row, r) => {
       if (r >= rows) { row.z.set(28); row.opacity.set(0); return; }
@@ -58,7 +57,5 @@ export const table = defineFigure({
       });
     });
 
-    const by = state === "error" ? rowY(bad) : rowY(rows - 1);
-    badge(scene, ROW_X + ROW_W / 2 + 18, by, 4, state, ctx.fade(), 11);
   },
 });

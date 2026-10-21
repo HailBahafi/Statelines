@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { clamp, lerp } from "../../engine/math";
 import type { Tone, Vec3 } from "../../engine/scene";
-import { badge, person } from "../shapes";
+import { person } from "../shapes";
 
 const R = 62;
 const MAX = 8;
@@ -10,12 +10,6 @@ const PAD = 11;
 const seat = (k: number, seats: number, spin: number) => {
   const a = -Math.PI * 0.75 + (k * Math.PI * 2) / seats + spin;
   return { x: R * Math.cos(a), y: R * Math.sin(a), a };
-};
-/** The verdict token sits on the plate's rim, in the gap between seats nearest the viewer. */
-const rim = (seats: number) => {
-  const step = (Math.PI * 2) / seats, base = -Math.PI * 0.75;
-  const a = base + (Math.round((Math.PI / 4 - base) / step - 0.5) + 0.5) * step;
-  return { x: 84 * Math.cos(a), y: 84 * Math.sin(a) };
 };
 
 /** People joining around a host. Use for teams, invites, members and sharing. `count`: seats, 2–8. */
@@ -78,7 +72,5 @@ export const team = defineFigure({
       });
     }
     people.sort((p, q) => p.depth - q.depth).forEach(p => p.draw());
-    const { x: rx, y: ry } = rim(seats);
-    badge(scene, rx, ry, 4, state, ctx.fade());
   },
 });

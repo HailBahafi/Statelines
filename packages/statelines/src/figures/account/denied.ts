@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { clamp } from "../../engine/math";
 import type { Tone, Vec3 } from "../../engine/scene";
-import { badge, person } from "../shapes";
+import { person } from "../shapes";
 
 const PIVOT: Vec3 = [-46, 0, 34];
 const LENGTH = 96;
@@ -56,6 +56,5 @@ export const denied = defineFigure({
     if (W >= 0) visitor();
     if (empty) person(scene, LANE_X, 32, 4, "ghost", undefined, 1.3);
 
-    badge(scene, -42, 30, 4, state, ctx.fade(), 12);
   },
 });

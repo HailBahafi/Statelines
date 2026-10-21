@@ -1,7 +1,6 @@
 import { defineFigure } from "../../core/define";
 import { bump, wrap } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge } from "../shapes";
 
 const R = 40;
 const H = 14;
@@ -16,7 +15,6 @@ export const database = defineFigure({
     const { scene, state } = ctx;
     const shake = ctx.shake();
     const gap = state === "success" ? 16 : 20 + 8 * ctx.hover;
-    let top = 0, topX = 0;
 
     scene.box(0, 0, 0, 112, 112, 4, "base");
     m.disks.forEach((disk, k) => {
@@ -39,9 +37,7 @@ export const database = defineFigure({
         scene.arc(X, 0, Z + H / 2, R, 0.45, 0.85, light, { bold: true });
         scene.arc(X, 0, Z + H / 2, R, 1.15, 1.35, "faint");
       }
-      if (k === 2) { top = Z + H; topX = X; }
     });
 
-    badge(scene, topX, 0, top, state, ctx.fade());
   },
 });

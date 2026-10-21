@@ -38,12 +38,12 @@ export const receipt = defineFigure({
     if (!empty) scene.line([-34, 44, TOP + 0.05], [-14, 44, TOP + 0.05], "base", { bold: true });
 
     if (state === "success" || state === "error") {
-      // The stamp's imprint: a double ring with the verdict inside.
+      // The stamp's imprint: a double ring with two stamped lines inside.
       const tone = ctx.verdict(), o = ctx.fade();
       scene.disc(SEAL[0], SEAL[1], TOP + 0.05, 17, tone, { opacity: o });
       scene.disc(SEAL[0], SEAL[1], TOP + 0.05, 14, tone, { opacity: o * 0.6 });
-      if (state === "success") scene.check(SEAL[0], SEAL[1], TOP + 0.05, "ok", o);
-      else scene.cross(SEAL[0], SEAL[1], TOP + 0.05, "err", o);
+      scene.line([SEAL[0] - 7, SEAL[1] - 3, TOP + 0.05], [SEAL[0] + 7, SEAL[1] - 3, TOP + 0.05], tone, { bold: true, opacity: o });
+      scene.line([SEAL[0] - 4, SEAL[1] + 4, TOP + 0.05], [SEAL[0] + 4, SEAL[1] + 4, TOP + 0.05], tone, { opacity: o });
     }
 
     const x = SEAL[0] + shake, y = SEAL[1];

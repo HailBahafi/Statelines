@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { smoothstep } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge, envelope, tray } from "../shapes";
+import { envelope, tray } from "../shapes";
 
 const MAX = 6;
 const PITCH = 5;
@@ -56,7 +56,6 @@ export const inbox = defineFigure({
         const tone: Tone = bad ? "err" : state === "success" && newest ? "ok" : falling ? "hi" : "base";
         const draw = () => {
           envelope(scene, X + (bad ? shake : 0), Y, Z, tone, O, SCALE);
-          if (newest) badge(scene, X + (bad ? shake : 0), Y - 2, Z + 3, state, ctx.fade(), 11);
         };
         if (Z + 3 > WALL_TOP) above.push(draw); else draw();
       });

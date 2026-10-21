@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { bump, lerp } from "../../engine/math";
 import type { Tone, Vec3 } from "../../engine/scene";
-import { badge, envelope, person } from "../shapes";
+import { envelope, person } from "../shapes";
 
 const SENDER: [number, number] = [-56, 20];
 const MAX = 6;
@@ -48,7 +48,6 @@ export const outreach = defineFigure({
           const mid = (len - 30 - PAD - 3) / 2 + 30;
           scene.line(from, [sx + ux * (mid - 13), sy + uy * (mid - 13), 0], "err");
           scene.line([sx + ux * (mid + 13), sy + uy * (mid + 13), 0], to, "err");
-          items.push({ depth: 999, draw: () => badge(scene, sx + ux * mid + shake, sy + uy * mid, 0, state, ctx.fade(), 10) });
         } else {
           scene.line(from, to, R > 0.5 ? (state === "success" ? "ok" : "muted") : "faint");
         }
@@ -66,6 +65,5 @@ export const outreach = defineFigure({
     });
     items.sort((a, b) => a.depth - b.depth).forEach(p => p.draw());
 
-    if (state === "success") badge(scene, sx, sy, 32, state, ctx.fade());
   },
 });

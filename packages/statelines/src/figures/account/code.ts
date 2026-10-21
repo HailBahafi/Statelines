@@ -1,12 +1,12 @@
 import { defineFigure } from "../../core/define";
 import { clamp, falloff } from "../../engine/math";
 import type { Tone } from "../../engine/scene";
-import { badge, frontArc } from "../shapes";
+import { frontArc } from "../shapes";
 
 const MAX = 8;
 const TYPE_EVERY = 0.38;
 const ROW_Y = 14;
-const LOCK = { x: -6, y: -40, w: 36, d: 20, h: 28 };
+const LOCK = { x: 16, y: -40, w: 36, d: 20, h: 28 };
 
 /** Keys of a one-time code and the lock they open. Use for two-factor, phone and email verification. `count`: digits, 4–8. */
 export const code = defineFigure({
@@ -80,6 +80,5 @@ export const code = defineFigure({
       if (empty && k === 0) scene.line([x, ROW_Y - key * 0.3, 7 + h + 0.05], [x, ROW_Y + key * 0.3, 7 + h + 0.05], "muted", { bold: true });
     }
 
-    badge(scene, half - 14, -44, 4, state, ctx.fade(), 12);
   },
 });

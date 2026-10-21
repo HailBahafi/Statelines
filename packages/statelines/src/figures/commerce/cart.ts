@@ -1,13 +1,12 @@
 import { defineFigure } from "../../core/define";
 import type { Scene, Tone } from "../../engine/scene";
-import { badge, tray } from "../shapes";
+import { tray } from "../shapes";
 
 const BASE = 12;
 const FLOOR = BASE + 3;
 const SLOTS = [[-28, -12], [0, -14], [28, -12], [-14, 14], [14, 14]] as const;
 /** Where a dropped item lands: on the plate, in front of the cart. */
 const DROPPED = [60, 42] as const;
-const MARK = [22, 46] as const;
 
 const item = (scene: Scene, k: number, x: number, y: number, z: number, tone: Tone, opacity?: number) =>
   k % 2 ? scene.cylinder(x, y, z, 9, 16, tone, opacity) : scene.box(x, y, z, 18, 18, 16, tone, opacity);
@@ -60,6 +59,5 @@ export const cart = defineFigure({
     });
     wheel(40, -26); wheel(-40, 26); wheel(40, 26);
     after.forEach(draw => draw());
-    badge(scene, MARK[0], MARK[1], 4, state, ctx.fade());
   },
 });

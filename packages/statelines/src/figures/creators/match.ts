@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { clamp } from "../../engine/math";
 import type { Tone, Vec3 } from "../../engine/scene";
-import { badge, frontArc, person } from "../shapes";
+import { frontArc, person } from "../shapes";
 
 const BRAND: [number, number] = [-58, 4];
 const CREATOR: [number, number] = [58, -4];
@@ -60,6 +60,5 @@ export const match = defineFigure({
     scene.cylinder(cX, cy, 4, 14, 4, empty ? "ghost" : "base");
     person(scene, cX, cy, 8, empty ? "ghost" : state === "error" ? "err" : state === "success" ? "ok" : "base", undefined, 1.05);
 
-    badge(scene, 0, 22, 4, state, ctx.fade());
   },
 });
