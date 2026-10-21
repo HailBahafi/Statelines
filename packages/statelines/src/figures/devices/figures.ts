@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { bump, clamp, lerp, smoothstep } from "../../engine/math";
-import type { Vec3 } from "../../engine/scene";
-import { facing } from "../shapes";
+import type { Tone, Vec3 } from "../../engine/scene";
+import { facing, frontArc } from "../shapes";
 
 /** A phone that connects to a device. Use for pairing, bluetooth and device setup. */
 export const pair = defineFigure({
@@ -104,25 +104,67 @@ export const watch = defineFigure({
 export const camera = defineFigure({
   name: "Camera",
   label: "A camera lens opening",
-  offset: 4,
-  setup: ({ spring }) => ({ iris: spring(0.2, 160, 18) }),
+  offset: 18,
+  setup: ({ spring }) => ({ iris: spring(0.3, 160, 18), photo: spring(0, 120, 16), press: spring(0, 220, 18) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    let open = 0.2;
-    if (state === "loading") open = 0.2 + 0.6 * bump(ctx.loop(1.8));
+    const empty = state === "empty";
+    let open = 0.3 + ctx.hover * 0.4, press = 0;
+    if (state === "loading") {
+      const q = ctx.loop(1.6);
+      open = 0.3 + 0.6 * bump(q);
+      press = q < 0.15 ? 1 : 0;
+      m.iris.set(open);
+    }
     if (state === "success") open = 0.9;
-    if (state === "error") open = 0.1;
-    if (state === "idle") open = 0.2 + ctx.hover * 0.3;
-    const O = m.iris.to(open).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 120, 80, 14, "base");
-    scene.box(-10, -46, 14, 40, 16, 10, "muted");
-    scene.cylinder(shake, 0, 14, 34, 14, tone);
-    scene.disc(shake, 0, 28.05, 26, "faint");
-    scene.disc(shake, 0, 28.1, 26 * O, tone === "base" ? "hi" : tone, { fill: true, opacity: 0.85 });
-    if (state === "success") scene.check(44, -26, 14, "ok", ctx.fade());
-    if (state === "error") scene.cross(44, -26, 14, "err", ctx.fade());
+    if (state === "error") open = 0.12;
+    const O = m.iris.to(open).value, P = m.press.to(press).value;
+    const F = m.photo.to(state === "success" ? 1 : 0).value;
+    const body: Tone = empty ? "ghost" : state === "loading" ? "base" : ctx.verdict();
+    const accent: Tone = state === "loading" ? "hi" : state === "success" ? "ok" : state === "error" ? "err" : "muted";
+
+    // Body proportions: x across, y depth (the lens looks out of the y+ face), z up.
+    const X = shake, Y = -8, W = 86, D = 30, H = 50, top = 4 + H, front = Y + D / 2;
+    scene.box(0, 0, 0, 132, 108, 4, "base");
+
+    // An instant photo slides out from under the camera on success.
+    if (F > 0.02) {
+      const py = lerp(Y, 34, F), pz = 4;
+      scene.box(-30, py, pz, 34, 36, 2, "ok", Math.min(1, F * 1.6));
+      scene.rect(-43, py - 13, -17, py + 9, pz + 2.05, "ok", F);
+      scene.polyline([[-43, py + 9, pz + 2.1], [-34, py - 1, pz + 2.1], [-28, py + 4, pz + 2.1], [-17, py - 6, pz + 2.1]], "ok", { opacity: F });
+    }
+
+    scene.box(X, Y, 4, W, D, H, body);
+    if (empty) {
+      scene.polyline(frontArc(X + 4, front + 0.05, 4 + H / 2, 18, 0, Math.PI * 2, 32), "ghost");
+      return;
+    }
+    // On top: the mode dial, the viewfinder hump and the shutter button.
+    scene.cylinder(X - 30, Y - 4, top, 7, 5, body);
+    scene.box(X + 2, Y - 2, top, 30, 22, 10, body);
+    scene.cylinder(X + 30, Y + 2, top, 5, 3 - P * 2, state === "loading" ? "hi" : body);
+    // On the face: the flash window and the grip.
+    const flash: Vec3[] = [[X - 38, front + 0.05, top - 14], [X - 24, front + 0.05, top - 14], [X - 24, front + 0.05, top - 6], [X - 38, front + 0.05, top - 6]];
+    scene.polyline(flash, state === "loading" && P > 0.5 ? "hi" : "muted", { closed: true, bold: state === "loading" && P > 0.5 });
+    scene.box(X + 34, front + 2, 4, 14, 4, H - 6, body);
+
+    // The lens: stepped rings standing out of the face, then the glass and its iris.
+    const lx = X + 2, lz = 4 + H / 2 - 1;
+    for (let k = 0; k < 6; k++) {
+      const y = front + 0.05 + k * 2.6, r = 21 - k * (k < 2 ? 0.4 : 1.1);
+      scene.panel(frontArc(lx, y, lz, r, 0, Math.PI * 2, 32), k === 5 ? accent === "muted" ? body : accent : body);
+    }
+    const glass = front + 0.1 + 5 * 2.6;
+    scene.polyline(frontArc(lx, glass, lz, 11, 0, Math.PI * 2, 28), "muted");
+    scene.polyline(frontArc(lx, glass, lz, Math.max(1.5, 11 * O), 0, Math.PI * 2, 28), accent === "muted" ? "base" : accent, { bold: true });
+    scene.polyline(frontArc(lx, glass, lz, 7.5, 2.1, 2.9, 6), "faint");
+    if (state === "error") {
+      // A cracked lens.
+      scene.polyline([[lx - 12, glass, lz + 6], [lx - 3, glass, lz + 1], [lx + 1, glass, lz + 5], [lx + 11, glass, lz - 4]], "err", { opacity: ctx.fade() });
+      scene.line([lx - 3, glass, lz + 1], [lx - 5, glass, lz - 9], "err", { opacity: ctx.fade() });
+    }
   },
 });
 
