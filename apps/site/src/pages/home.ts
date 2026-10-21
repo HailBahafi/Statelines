@@ -19,7 +19,7 @@ $("#showcase").replaceChildren(...FEATURED.flatMap(name => {
     stage,
     h("span", { class: "card-name" }, entry.figure.definition.name),
     h("span", { class: "card-use" }, entry.use));
-  attachFlow(card, entry.figure(stage, { state: "loading" }), { progress: entry.progress, state: "loading" });
+  attachFlow(card, entry.figure(stage, { state: "loading" }), { progress: entry.progress, state: "loading", name: entry.figure.definition.name });
   return [card];
 }));
 

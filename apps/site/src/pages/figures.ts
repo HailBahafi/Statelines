@@ -33,7 +33,7 @@ for (const section of catalog) {
       h("span", { class: "card-use" }, entry.use),
       h("span", { class: "tags" }, ...tags));
     const instance = entry.figure(stage, { state });
-    const flow = attachFlow(element, instance, { progress: entry.progress, state });
+    const flow = attachFlow(element, instance, { progress: entry.progress, state, name: entry.figure.definition.name });
     cards.push({ entry, shelf: section.id, element, instance, flow });
   }
 }
