@@ -1,6 +1,6 @@
 import { defineFigure } from "../../core/define";
 import { smoothstep } from "../../engine/math";
-import type { Vec3 } from "../../engine/scene";
+import type { Tone, Vec3 } from "../../engine/scene";
 import { facing } from "../shapes";
 
 /** A padlock that opens. Use for locked content, access control and secure areas. */
@@ -103,25 +103,56 @@ export const vault = defineFigure({
   },
 });
 
-/** A fingerprint being read by a scanner ring. Use for biometric sign in and device trust. */
+/** A fingerprint being read on a reader's glass. Use for biometric sign in and device trust. */
 export const fingerprint = defineFigure({
   name: "Fingerprint",
   label: "A fingerprint being scanned",
-  offset: 0,
-  setup: ({ spring }) => ({ scan: spring(0, 160, 16) }),
+  offset: 34,
+  setup: ({ spring }) => ({ shown: spring(0.5, 120, 18), scan: spring(18, 160, 18) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const ringsOn = state === "loading" ? 6 : state === "success" ? 6 : state === "idle" ? 3 + Math.round(ctx.hover * 3) : 0;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "muted";
-    for (let k = 1; k <= 6; k++) {
-      const r = 6 + k * 6, on = k <= ringsOn;
-      scene.arc(shake, 0, 6, r, Math.PI * 0.9, Math.PI * 2.1, on ? tone : "faint", { opacity: on ? 1 : 0.35 });
+    const face = 7.05, cz = 46, low = 18, high = 76;
+    // How far up the glass the ridges are lit, 0…1.
+    let lit = 0.45 + ctx.hover * 0.55, scan = low;
+    if (state === "loading") {
+      const p = ctx.loop(2.2);
+      scan = low + (high - low) * (1 - Math.abs(2 * p - 1));
+      lit = (scan - low) / (high - low);
+      m.scan.set(scan); m.shown.set(lit);
     }
-    const beam = m.scan.to(state === "loading" ? ctx.loop(2.2) * 2 - 1 : 0).value * 42;
-    if (state === "loading") scene.line([-42, beam, 22], [42, beam, 22], "hi", { bold: true });
-    if (state === "success") scene.check(0, 46, 6, "ok", ctx.fade());
-    if (state === "error") scene.cross(0, 46, 6, "err", ctx.fade());
+    if (state === "success" || state === "error") lit = 1;
+    if (state === "empty") lit = 0;
+    const L = m.shown.to(lit).value;
+    const reader: Tone = state === "empty" ? "ghost" : state === "loading" ? "base" : ctx.verdict();
+    const ridge: Tone = state === "loading" ? "hi" : state === "success" ? "ok" : state === "error" ? "err" : "base";
+
+    scene.box(0, 0, 0, 112, 84, 4, "base");
+    scene.box(shake, 0, 4, 66, 14, 82, reader);
+    scene.box(shake, 0, 86, 14, 6, 3, state === "success" ? "ok" : state === "error" ? "err" : "muted");
+    const at = (u: number, z: number): Vec3 => [shake + u, face, z];
+    scene.polyline([at(-26, 14), at(26, 14), at(26, 80), at(-26, 80)], "faint", { closed: true });
+    if (state === "empty") {
+      scene.polyline(Array.from({ length: 25 }, (_, i) => {
+        const a = (i / 24) * Math.PI * 2;
+        return at(16 * Math.cos(a), cz + 22 * Math.sin(a));
+      }), "ghost");
+      return;
+    }
+
+    // Nested arches, open at the bottom, like the whorl of a fingertip.
+    for (let k = 1; k <= 6; k++) {
+      const rx = 3 + 3.3 * k, rz = 3.5 + 4 * k;
+      const pts = Array.from({ length: 29 }, (_, i) => {
+        const a = -0.18 * Math.PI + (i / 28) * 1.36 * Math.PI;
+        return at(rx * Math.cos(a), cz + rz * Math.sin(a));
+      });
+      // On error the print is smudged: every other ridge breaks in the middle.
+      const parts = state === "error" && k % 2 === 0 ? [pts.slice(0, 11), pts.slice(18)] : [pts];
+      const on = (cz - rz - low) / (high - low) < L;
+      for (const part of parts) scene.polyline(part, on ? ridge : "faint");
+    }
+    if (state === "loading") scene.line(at(-26, m.scan.value), at(26, m.scan.value), "hi", { bold: true });
   },
 });
 

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <script>try{var t=localStorage.getItem("statelines-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
   <title>Figures · statelines</title>
-  <meta name="description" content="Browse all 101 statelines figures. Search, filter by shelf, and switch every figure between its five states.">
+  <meta name="description" content="Browse all 101 statelines figures. Filter by shelf, and switch every figure between its five states.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,16 +17,22 @@
     <header style="padding-top:44px">
       <p class="eyebrow">Figures</p>
       <h1 style="font-size:clamp(32px,4.4vw,46px)">Every figure, every state.</h1>
-      <p class="muted" style="margin-top:12px;max-width:60ch">Search, filter by shelf, and switch the whole page between states. Open any figure to tune its options and copy the code.</p>
+      <p class="muted" style="margin-top:12px;max-width:60ch">Every figure runs its loading state. Hover a card to see it finish, succeed and fail, or switch the whole page to one state. Open any figure to tune its options and copy the code.</p>
     </header>
-    <div class="toolbar">
-      <input class="search" id="search" type="search" placeholder="Search figures or uses" aria-label="Search figures">
-      <div class="seg" id="states" role="group" aria-label="State of every figure"></div>
+    <div class="browse">
+      <aside class="filters" aria-label="Filters">
+        <p class="filter-title">State</p>
+        <div class="seg seg-col" id="states" role="group" aria-label="State of every figure"></div>
+        <p class="filter-hint">In loading, hover a card to play it through to success and error.</p>
+        <p class="filter-title">Shelves</p>
+        <div class="chips chips-col" id="chips" role="group" aria-label="Filter by shelf"></div>
+      </aside>
+      <section class="browse-main">
+        <p class="count-line" id="count" aria-live="polite"></p>
+        <div class="cards" id="cards"></div>
+        <p class="empty-state" id="none" hidden>No figures on this shelf.</p>
+      </section>
     </div>
-    <div class="chips" id="chips" role="group" aria-label="Filter by shelf"></div>
-    <p class="count-line" id="count" aria-live="polite"></p>
-    <div class="cards" id="cards"></div>
-    <p class="empty-state" id="none" hidden>No figure matches that search.</p>
   </main>
   <div id="foot"></div>
   <script type="module" src="/src/pages/figures.ts"></script>

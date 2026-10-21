@@ -57,3 +57,8 @@ errors, `NaN`/`undefined` in the markup and drawings that leave the viewBox.
 - Denied: a visitor now stands at the barrier: on success the arm lifts and the visitor walks through to the far side, on error the visitor is turned back with the arm down; loading twitches the arm in the active tone with the light blinking; the open arm no longer leaves the frame.
 - Profile: the card sits on a plate with a header rule and labelled fields; the avatar stands on a round pad with a ring that fills while loading and a field line that writes itself; error stops the ring short and slides the photo off its pad.
 - Plans: tiers carry their features on the front face and a coin stack for the price; the idle choice is no longer drawn in the loading tone; success lifts the chosen tier, error leaves it down and spills its top coin onto the plate.
+- Receipt (second pass, at the owner's request): now a receipt printer on a plate with a slot, display and status light; the slip stands out of the slot with a torn top edge and printed lines; loading feeds it out, success shows the full slip with a green paid stamp, error tears it off short and drops the torn piece on the plate. Doc and label updated.
+
+## Security (early fix)
+
+- Fingerprint: the ridges were half circles cut off by their angle range; the print now sits whole on the glass of an upright reader as nested arches; loading sweeps a scan line that lights the ridges below it; success completes them in green; error breaks every other ridge (smudged) in red; empty is a dashed outline. The rest of the shelf is still to be redrawn.

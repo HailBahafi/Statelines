@@ -17,7 +17,7 @@
   <div id="top"></div>
   <main>
     <div class="wrap">
-      <section class="hero">
+      <section class="hero hero-solo">
         <div>
           <p class="eyebrow">Open source · MIT</p>
           <h1>Figures for the moments every app has.</h1>
@@ -28,15 +28,10 @@
           </div>
           <div class="install-line"><span>npm i statelines</span><button class="copy" type="button" data-copy="npm i statelines">Copy</button></div>
         </div>
-        <div class="hero-stage" aria-label="Three example figures">
-          <div class="grid3">
-            <div class="cell"><div class="stage" data-figure="Upload" data-state="loading"></div></div>
-            <div class="cell"><div class="stage" data-figure="Pay" data-state="success"></div></div>
-            <div class="cell"><div class="stage" data-figure="Write" data-state="loading"></div></div>
-          </div>
-          <div class="hero-caption"><span>Upload · loading</span><span>Pay · success</span><span>Write · loading</span></div>
-        </div>
       </section>
+
+      <p class="showcase-hint">Each figure is loading. Hover one to watch it finish, then succeed, then fail.</p>
+      <div class="showcase" id="showcase" aria-label="Featured figures"></div>
 
       <section class="section">
         <div class="section-head">

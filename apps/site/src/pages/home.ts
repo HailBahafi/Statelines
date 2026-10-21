@@ -1,19 +1,27 @@
 import "../styles/site.css";
 import { catalog } from "../data/catalog";
-import { findEntry } from "../data";
+import { findEntry, slugOf } from "../data";
 import { applyStoredTheme, mountFooter, mountHeader } from "../ui/shell";
 import { $, copy, h } from "../ui/dom";
+import { attachFlow } from "../ui/flow";
 
 applyStoredTheme();
 mountHeader("home");
 mountFooter();
 
-// Live example figures in the hero.
-document.querySelectorAll<HTMLElement>("[data-figure]").forEach(stage => {
-  const entry = findEntry(stage.dataset.figure ?? "");
-  if (!entry) return;
-  entry.figure(stage, { state: (stage.dataset.state as "idle" | "loading" | "success") ?? "idle" });
-});
+// The best figures, big, in loading; hovering a card plays it through to success and error.
+const FEATURED = ["Upload", "Send", "Chat", "Pay", "Shipping", "SignIn"];
+$("#showcase").replaceChildren(...FEATURED.flatMap(name => {
+  const entry = findEntry(name);
+  if (!entry) return [];
+  const stage = h("div", { class: "stage" });
+  const card = h("a", { class: "card", href: `/figures/${slugOf(entry)}` },
+    stage,
+    h("span", { class: "card-name" }, entry.figure.definition.name),
+    h("span", { class: "card-use" }, entry.use));
+  attachFlow(card, entry.figure(stage, { state: "loading" }), { progress: entry.progress, state: "loading" });
+  return [card];
+}));
 
 // Copy buttons in the hero.
 document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach(button => {

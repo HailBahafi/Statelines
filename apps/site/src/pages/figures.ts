@@ -4,17 +4,18 @@ import { catalog, type Entry } from "../data/catalog";
 import { slugOf } from "../data";
 import { applyStoredTheme, mountFooter, mountHeader } from "../ui/shell";
 import { $, h } from "../ui/dom";
+import { attachFlow, type Flow } from "../ui/flow";
 
 applyStoredTheme();
 mountHeader("figures");
 mountFooter();
 
-interface Card { entry: Entry; shelf: string; element: HTMLElement; instance: FigureInstance }
+interface Card { entry: Entry; shelf: string; element: HTMLElement; instance: FigureInstance; flow: Flow }
 
 const params = new URLSearchParams(location.search);
-let state: FigureState = "idle";
+// The page opens in loading: every figure runs slowly, and hovering a card plays its whole story.
+let state: FigureState = "loading";
 let shelf = catalog.some(s => s.id === params.get("shelf")) ? params.get("shelf") ?? "all" : "all";
-let query = "";
 
 const cards: Card[] = [];
 
@@ -32,7 +33,8 @@ for (const section of catalog) {
       h("span", { class: "card-use" }, entry.use),
       h("span", { class: "tags" }, ...tags));
     const instance = entry.figure(stage, { state });
-    cards.push({ entry, shelf: section.id, element, instance });
+    const flow = attachFlow(element, instance, { progress: entry.progress, state });
+    cards.push({ entry, shelf: section.id, element, instance, flow });
   }
 }
 $("#cards").replaceChildren(...cards.map(c => c.element));
@@ -49,13 +51,14 @@ function setState(next: FigureState): void {
   state = next;
   stateGroup.querySelectorAll<HTMLButtonElement>("button").forEach(b =>
     b.setAttribute("aria-pressed", String(b.dataset.state === next)));
-  cards.forEach((card, i) => setTimeout(() => card.instance.update({ state: next }), (i % 10) * 22));
+  cards.forEach((card, i) => setTimeout(() => card.flow.setState(next), (i % 10) * 22));
 }
 
-// Shelf filter chips.
+// Shelf filter, one row per shelf in the side panel.
 const chips = $("#chips");
 const chip = (id: string, label: string, n: number) => {
-  const button = h("button", { type: "button", class: "chip", "data-shelf": id, "aria-pressed": id === shelf ? "true" : "false" }, `${label} · ${n}`);
+  const button = h("button", { type: "button", class: "chip", "data-shelf": id, "aria-pressed": id === shelf ? "true" : "false" },
+    h("span", {}, label), h("span", { class: "chip-n" }, String(n)));
   button.addEventListener("click", () => setShelf(id));
   return button;
 };
@@ -70,17 +73,10 @@ function setShelf(id: string): void {
   apply();
 }
 
-// Search across names and uses.
-$<HTMLInputElement>("#search").addEventListener("input", event => {
-  query = (event.target as HTMLInputElement).value.trim().toLowerCase();
-  apply();
-});
-
 function apply(): void {
   let visible = 0;
   for (const card of cards) {
-    const haystack = `${card.entry.figure.definition.name} ${card.entry.use} ${card.shelf}`.toLowerCase();
-    const match = (shelf === "all" || card.shelf === shelf) && (!query || haystack.includes(query));
+    const match = shelf === "all" || card.shelf === shelf;
     card.element.hidden = !match;
     if (match) visible++;
   }
