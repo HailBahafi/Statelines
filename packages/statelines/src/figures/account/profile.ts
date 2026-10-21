@@ -1,42 +1,62 @@
 import { defineFigure } from "../../core/define";
-import { TAU } from "../../engine/math";
-import { person } from "../shapes";
+import { TAU, clamp } from "../../engine/math";
+import type { Tone } from "../../engine/scene";
+import { badge, person } from "../shapes";
 
-const AVATAR = [0, -24] as const;
+const AVATAR = [-12, -26] as const;
+const CARD = { w: 96, d: 120 };
+const TOP = 4 + 3;
 
 /** A profile card with an avatar. Use for onboarding, account setup and profile photos. */
 export const profile = defineFigure({
   name: "Profile",
   label: "A profile card with an avatar",
-  offset: 8,
-  setup: ({ spring }) => ({ lift: spring(0) }),
+  offset: 10,
+  setup: ({ spring }) => ({ lift: spring(0), slide: spring(0, 120, 14), ring: spring(0, 90, 18) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const L = m.lift.to(state === "idle" ? ctx.hover * 8 : 0).value;
+    const empty = state === "empty";
+    const L = m.lift.to(state === "idle" ? ctx.hover * 8 : state === "success" ? 4 : 0).value;
+    // On error the photo slides off its pad toward the card's edge.
+    const S = clamp(m.slide.to(state === "error" ? 1 : 0).value, 0, 1.2);
+    const R = m.ring.to(state === "success" ? 1 : state === "error" ? 0.62 : 0).value;
     const [ax, ay] = AVATAR;
 
-    scene.box(0, 0, 0, 100, 124, 4, "base");
-    const top = 4.05;
-    scene.disc(ax, ay, top, 26, state === "empty" ? "ghost" : "muted");
+    scene.box(0, 0, 0, CARD.w + 20, CARD.d + 20, 4, "base");
+    scene.box(0, 0, 4, CARD.w, CARD.d, 3, "base");
+    // The header band across the card's top edge.
+    scene.line([-CARD.w / 2 + 6, -CARD.d / 2 + 10, TOP + 0.05], [CARD.w / 2 - 6, -CARD.d / 2 + 10, TOP + 0.05], "faint");
 
+    // The avatar pad and the ring that fills as the photo uploads.
+    scene.cylinder(ax, ay, TOP, 22, 2, empty ? "ghost" : "base");
+    const rz = TOP + 0.05;
+    if (!empty) scene.disc(ax, ay, rz, 28, "faint");
     if (state === "loading") {
-      const a = ctx.time * 4;
-      scene.arc(ax, ay, top, 30, a, a + 1.8, "hi", { bold: true });
+      const t = ctx.time * 4;
+      scene.arc(ax, ay, rz, 28, t, t + 1.9, "hi", { bold: true });
     }
-    if (state === "success" || state === "error") {
-      scene.arc(ax, ay, top, 30, 0, TAU * ctx.fade(0.5), ctx.verdict(), { bold: true });
+    if (R > 0.01 && (state === "success" || state === "error")) {
+      scene.arc(ax, ay, rz, 28, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(R), ctx.verdict(), { bold: true });
     }
 
-    const who = state === "empty" ? "ghost" : state === "loading" ? "muted" : ctx.verdict();
-    person(scene, ax + shake, ay, 4 + L, who, undefined, 1.25);
+    // The fields: a bold name and two detail lines, each with a short label.
+    const line: Tone = empty ? "ghost" : "muted";
+    const fx = -CARD.w / 2 + 12;
+    for (const [i, len] of [[0, 54], [1, 40], [2, 48]] as const) {
+      const y = 16 + i * 13;
+      if (state === "loading" && i === 2) {
+        const p = ctx.loop(1.4);
+        scene.line([fx, y, TOP + 0.05], [fx + len * p, y, TOP + 0.05], "hi", { bold: true });
+        continue;
+      }
+      scene.line([fx, y, TOP + 0.05], [fx + len, y, TOP + 0.05], i === 0 && !empty ? "base" : line, { bold: i === 0 });
+    }
 
-    const line = state === "empty" ? "ghost" : "muted";
-    scene.line([-30, 18, top], [26, 18, top], state === "empty" ? "ghost" : "base", { bold: true });
-    scene.line([-30, 30, top], [10, 30, top], line);
-    scene.line([-30, 42, top], [18, 42, top], line);
+    const who: Tone = empty ? "ghost" : state === "loading" ? "muted" : ctx.verdict();
+    const px = ax + S * 26 + shake, py = ay + S * 26;
+    person(scene, px, py, TOP + 2 * (1 - clamp(S)) + L, who, undefined, 1.2);
 
-    if (state === "success") scene.check(24, -2, top, "ok", ctx.fade());
-    if (state === "error") scene.cross(24 + shake, -2, top, "err", ctx.fade());
+    badge(scene, 32, -34, TOP, state, ctx.fade(), 12);
   },
 });
