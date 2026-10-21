@@ -8,14 +8,22 @@ concurrency:
   group: release
   cancel-in-progress: false
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
     steps:
+      - name: Require npm publishing token
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::NPM_TOKEN is empty. Add the NPM_TOKEN repository secret before releasing."
+            exit 1
+          fi
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -25,7 +33,7 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
       # On push to main: opens a "Version Packages" pull request while changesets are pending,
-      # and publishes to npm once that pull request is merged.
+      # and publishes unpublished versions when no changesets remain (including the first release).
       - uses: changesets/action@v1
         with:
           version: pnpm version-packages
@@ -34,5 +42,7 @@ jobs:
           title: "chore: version packages"
           createGithubReleases: true
         env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"

@@ -22,9 +22,21 @@ jobs:
         run: |
           python3 scripts/generate.py
           git diff --exit-code -- packages/statelines/src/react apps/site/src/data packages/statelines/test/lists.ts
-      - name: Every change to the library has a changeset
+      - name: Library source changes have a changeset
         if: github.event_name == 'pull_request'
-        run: pnpm changeset status --since=origin/${{ github.base_ref }}
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: |
+          # Metadata-only release setup must not bump the initial unpublished version.
+          if git diff --quiet "$BASE_REF" -- packages/statelines/src packages/statelines/tsup.config.ts; then
+            echo "No library source or build changes need a changeset."
+          else
+            pnpm changeset status --since="$BASE_REF"
+          fi
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - name: Check the package can publish
+        if: github.event_name == 'pull_request'
+        run: pnpm --filter statelines publish --dry-run --no-git-checks
+      - run: pnpm smoke:pack

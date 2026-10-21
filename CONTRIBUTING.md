@@ -32,6 +32,23 @@ pnpm changeset
 
 Choose patch, minor or major, and write one or two sentences. The pull request check fails if a library change has no changeset. When your pull request merges, the release workflow opens a "Version Packages" pull request. Merging that publishes the new version to npm.
 
+## Publishing
+
+Set `NPM_TOKEN` as a GitHub repository Actions secret with npm publishing rights for `statelines`. The release workflow fails early if it is missing and publishes with npm provenance.
+
+Normally, merging changesets to `main` opens a **Version Packages** pull request. Merging that pull request publishes the new version and creates a GitHub release. With no pending changesets, the workflow runs `pnpm release` directly: Changesets publishes each package version that is not already on npm. This also handles the initial `0.3.0` release without a version bump.
+
+Before releasing, run `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm test`, `pnpm build`, and `pnpm smoke:pack`. The smoke test uses npm only inside a temporary consumer project to test the packed tarball; use pnpm for repository commands.
+
+For a manual publish, a maintainer must sign in and then run:
+
+```sh
+npm login
+pnpm release
+```
+
+Create or sign in to your npm account and enable two-factor authentication. Create a granular token with read and write access for `statelines`, and save it only as the repository secret `NPM_TOKEN`. Before the first release, a maintainer must confirm `npm view statelines` returns 404. After merging to `main`, confirm the published version with `npm view statelines version`.
+
 ## Code style
 
 - Strict TypeScript. No `any` in figures.

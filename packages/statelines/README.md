@@ -2,6 +2,8 @@
 
 Figures for the moments every app has.
 
+[Website](https://statelines.vercel.app) · [GitHub](https://github.com/HailBahafi/Statelines)
+
 Uploading a file, paying, typing a verification code, waiting on an AI reply, matching a creator to a brand. statelines is 101 isometric line drawings that show what your app is doing through a single `state` prop, and lean toward the pointer while they rest.
 
 - **One prop that means something.** `idle`, `loading`, `success`, `error`, `empty`. Wire it to your app's real state and the figure tells the story.
@@ -15,6 +17,12 @@ Uploading a file, paying, typing a verification code, waiting on an AI reply, ma
 
 ```sh
 npm i statelines
+```
+
+For React:
+
+```tsx
+import { Upload } from "statelines/react";
 ```
 
 ## Use
@@ -208,9 +216,11 @@ The site has four pages:
 | `/figures/<name>` | One figure: every state, every option with live code, the props, and the code to use it. |
 | `/docs` | Install, usage, options, theme, accessibility, and how to make your own figure. |
 
-## Versioning and releases
+## Release
 
 statelines follows semantic versioning. Each change to the library includes a changeset (`pnpm changeset`), which sets its bump and its changelog entry. Merging to `main` opens a release pull request, and merging that publishes to npm and creates a GitHub release. The full history is in [packages/statelines/CHANGELOG.md](packages/statelines/CHANGELOG.md).
+
+See [Publishing in CONTRIBUTING.md](CONTRIBUTING.md#publishing) for release setup and the initial release.
 
 ## Deploy on Vercel
 

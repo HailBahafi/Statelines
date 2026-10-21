@@ -10,6 +10,7 @@
     "build": "pnpm --filter statelines build && pnpm --filter statelines-site build",
     "typecheck": "pnpm --filter statelines typecheck && pnpm --filter statelines-site typecheck",
     "test": "pnpm --filter statelines test",
+    "smoke:pack": "node scripts/smoke-pack.mjs",
     "generate": "python3 scripts/generate.py",
     "changeset": "changeset",
     "release": "pnpm --filter statelines build && changeset publish",
@@ -17,7 +18,7 @@
     "version-packages": "changeset version && pnpm install --lockfile-only"
   },
   "devDependencies": {
-    "@changesets/cli": "^3.0.3",
+    "@changesets/cli": "^2.29.8",
     "prettier": "3"
   }
 }

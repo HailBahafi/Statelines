@@ -40,7 +40,7 @@ export function mountHeader(active: Section): void {
       h("nav", { class: "top-nav", "aria-label": "Main" },
         link("figures", "/figures", "Figures"),
         link("docs", "/docs", "Docs"),
-        h("a", { href: "https://github.com/", target: "_blank", rel: "noopener" }, "GitHub")),
+        h("a", { href: "https://github.com/HailBahafi/Statelines", target: "_blank", rel: "noopener" }, "GitHub")),
       theme)));
 }
 
@@ -50,6 +50,6 @@ export function mountFooter(): void {
   if (!foot) return;
   foot.replaceChildren(h("footer", { class: "foot" },
     h("div", { class: "wrap foot-inner" },
-      h("span", {}, `statelines v${__STATELINES_VERSION__} · MIT licensed · zero dependencies`),
+      h("span", {}, h("a", { href: "https://statelines.vercel.app" }, `statelines v${__STATELINES_VERSION__}`), " · MIT licensed · zero dependencies"),
       h("span", {}, h("a", { href: "/docs" }, "Docs"), " · ", h("a", { href: "/figures" }, "Figures"), " · ", h("a", { href: "/llms.txt" }, "llms.txt")))));
 }
