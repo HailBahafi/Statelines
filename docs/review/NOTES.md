@@ -40,3 +40,11 @@ errors, `NaN`/`undefined` in the markup and drawings that leave the viewBox.
 - Chat: the phone was a slab lying flat and read as a board; it now stands upright on a plate, with bubbles standing proud of its screen, typing dots in the loading bubble, and the verdict token on the plate in front.
 - Alerts: stack stands on a plate; each card has an app icon, a bold title on the top card and a detail line; the unread badge sits on the card's far corner and becomes the verdict token on success and error.
 - Team: people stand on a round plate with a pad per seat and links that stop short of host and pads; the failing seat's link, pad and person turn red; the token sits in the gap between seats nearest the viewer, for any seat count.
+
+## Commerce
+
+- Cart: stands on a plate on four wheels; the bare polyline handle is now two posts and a grip; a dropped item lands on the plate in front instead of floating outside the wall; the arriving item is in the loading tone; empty shows a dashed item on the basket floor; the verdict sits on a token instead of a check floating above the cart.
+- Pay: terminal stands on a plate with a set-in screen, keypad and slot; the verdict token sits on the screen; error drops the card onto the keypad, clear of the screen (the first try covered the token); success lifts it away.
+- Receipt: sits on a desk plate; gains a torn edge, a bold heading and a bold total; the stamp's imprint stays the verdict; empty is dashed throughout, stamp included.
+- Shipping: the route now runs from a depot with a loading door to a home with a pitched roof; passed stops take the route's tone and the stuck stop turns red; the verdict token sits on the plate instead of a check floating over the parcel. Doc updated to name the depot and home.
+- Wallet: there was no wallet, only coins; the figure now has a wallet with a flap and clasp that lifts toward the pointer, with the coin stack beside it; a slipped coin lands on the plate carrying the error token. Doc updated to say "beside a wallet". Open: at 200 px the wallet reads as a lidded case more than a wallet.

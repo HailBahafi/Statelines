@@ -1,58 +1,73 @@
 import { defineFigure } from "../../core/define";
+import type { Tone } from "../../engine/scene";
+import { badge } from "../shapes";
 
 const MAX = 10;
 const PITCH = 6;
-const MAIN = [-14, 10] as const;
-const SIDE = [28, -16] as const;
-const SLIDE = 40;
+const WALLET = { x: -30, y: 14, w: 70, d: 50, h: 16 };
+const STACK = [34, -16] as const;
+const R = 18;
+/** Where a coin that slips off lands. */
+const SLIPPED = [60, 22] as const;
 
-/** Coins stack up. Use for balances, credits, payouts and rewards. `count`: coins, 1–10. */
+/** Coins stack up beside a wallet. Use for balances, credits, payouts and rewards. `count`: coins, 1–10. */
 export const wallet = defineFigure({
   name: "Wallet",
   label: "Coins stacking into a balance",
-  offset: 10,
+  offset: 12,
   setup: ({ spring }) => ({
     coins: Array.from({ length: MAX }, (_, k) => ({
-      z: spring(k < 6 ? k * PITCH : k * PITCH + 40, 160, 20), x: spring(0), opacity: spring(k < 6 ? 1 : 0, 150, 22),
+      z: spring(k < 6 ? 4 + k * PITCH : 4 + k * PITCH + 40, 160, 20),
+      x: spring(0), y: spring(0), opacity: spring(k < 6 ? 1 : 0, 150, 22),
     })),
+    flap: spring(0),
   }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
+    const empty = state === "empty";
     const coins = ctx.count(6, MAX, 1);
     let count = coins;
-    if (state === "empty") count = 0;
+    if (empty) count = 0;
     if (state === "loading") {
       const q = ctx.progress(coins * 0.5 + 0.6);
       count = ctx.determinate ? Math.round(q * coins) : Math.min(coins, 1 + Math.floor(q * (coins + 1)));
     }
-    const falling = state === "error" ? coins - 1 : -1;
-    let top = { x: MAIN[0], z: 0 };
-    let fallen: (() => void) | undefined;
+    const slipped = state === "error" ? coins - 1 : -1;
+    const [sx, sy] = STACK;
+    let topZ = 4;
 
-    if (state === "empty") scene.cylinder(MAIN[0], MAIN[1], 0, 20, 5, "ghost");
+    scene.box(4, 0, 0, 160, 104, 4, "base");
+
+    // The wallet: a folded body with its flap and clasp; the flap lifts toward the pointer.
+    const { x, y, w, d, h } = WALLET;
+    const F = m.flap.to(state === "idle" ? ctx.hover * 6 : state === "loading" ? 4 : 0).value;
+    const body: Tone = empty ? "ghost" : "base";
+    scene.box(x, y, 4, w, d, h, body);
+    scene.box(x + 8, y, 4 + h + F, w - 16, d + 2, 4, body);
+    if (!empty) scene.box(x + 8, y + d / 2 + 2, 4 + h - 6 + F, 10, 3, 8, "muted");
+
+    if (empty) scene.cylinder(sx, sy, 4, R, 5, "ghost");
     m.coins.forEach((coin, k) => {
       const present = k < count;
-      let z = present ? k * PITCH : k * PITCH + 40, x = 0;
-      if (k === falling) { z = 0; x = SLIDE; }
+      let z = present ? 4 + k * PITCH : 4 + k * PITCH + 40, dx = 0, dy = 0;
+      if (k === slipped) { z = 4; dx = SLIPPED[0] - sx; dy = SLIPPED[1] - sy; }
       if (state === "idle" && k === count - 1) z += ctx.hover * 10;
-      const Z = coin.z.to(z).value, X = coin.x.to(x).value, O = coin.opacity.to(present ? 1 : 0).value;
-      if (k === falling) {
-        fallen = () => {
-          scene.cylinder(MAIN[0] + X + shake, MAIN[1], Z, 20, 5, "err");
-          scene.cross(MAIN[0] + SLIDE + shake, MAIN[1], 5, "err", ctx.fade());
-        };
-        return;
-      }
-      const isTop = k === (falling >= 0 ? falling - 1 : count - 1);
-      const tone = isTop ? (state === "loading" ? "hi" : ctx.verdict()) : "base";
-      scene.cylinder(MAIN[0], MAIN[1], Z, 20, 5, tone, O);
-      if (isTop) top = { x: MAIN[0], z: Z + 5 };
+      const Z = coin.z.to(z).value, X = coin.x.to(dx).value, Y = coin.y.to(dy).value, O = coin.opacity.to(present ? 1 : 0).value;
+      if (k === slipped) return;
+      const isTop = k === (slipped >= 0 ? slipped - 1 : count - 1);
+      const tone: Tone = isTop ? (state === "loading" ? "hi" : ctx.verdict()) : "base";
+      scene.cylinder(sx + X, sy + Y, Z, R, 5, tone, O);
+      if (isTop) topZ = Z + 5;
     });
 
-    for (let k = 0; k < 3; k++) scene.cylinder(SIDE[0], SIDE[1], k * PITCH, 20, 5, state === "empty" ? "ghost" : "base");
-    fallen?.();
-
-    if (state === "success") scene.check(top.x, MAIN[1], top.z, "ok", ctx.fade());
+    if (slipped >= 0) {
+      const c = m.coins[slipped]!;
+      const cx = sx + c.x.value + shake, cy = sy + c.y.value;
+      scene.cylinder(cx, cy, c.z.value, R, 5, "err");
+      badge(scene, cx, cy, c.z.value + 5, state, ctx.fade(), 12);
+    } else {
+      badge(scene, sx, sy, topZ, state, ctx.fade(), 14);
+    }
   },
 });
