@@ -1,5 +1,5 @@
 import "../styles/site.css";
-import { FIGURE_STATES, type FigureInstance, type FigureState } from "momenta";
+import { FIGURE_STATES, type FigureInstance, type FigureState } from "statelines";
 import { catalog, type Entry } from "../data/catalog";
 import { slugOf } from "../data";
 import { applyStoredTheme, mountFooter, mountHeader } from "../ui/shell";

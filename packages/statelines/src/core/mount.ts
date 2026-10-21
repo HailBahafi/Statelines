@@ -25,7 +25,7 @@ export function mount<Model>(
   svg.setAttribute("role", "img");
   const group = document.createElementNS(SVG_NS, "g");
   svg.appendChild(group);
-  element.classList.add("momenta");
+  element.classList.add("statelines");
   element.appendChild(svg);
 
   let markup = "";
@@ -122,7 +122,7 @@ export function mount<Model>(
       svg.removeEventListener("pointerleave", onLeave);
       svg.remove();
       for (const name of styled) element.style.removeProperty(name);
-      element.classList.remove("momenta");
+      element.classList.remove("statelines");
       delete element.dataset.theme;
     },
   };

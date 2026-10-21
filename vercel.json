@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter momenta-site build",
+  "buildCommand": "pnpm --filter statelines-site build",
   "outputDirectory": "apps/site/dist",
   "cleanUrls": true,
   "trailingSlash": false,

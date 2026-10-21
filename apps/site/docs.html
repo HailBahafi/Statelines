@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <script>try{var t=localStorage.getItem("momenta-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
-  <title>Docs · momenta</title>
-  <meta name="description" content="Install, use and customise momenta: 101 isometric line figures with one state prop, for React and everything else.">
+  <script>try{var t=localStorage.getItem("statelines-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <title>Docs · statelines</title>
+  <meta name="description" content="Install, use and customise statelines: 101 isometric line figures with one state prop, for React and everything else.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,7 +50,7 @@
           <button role="tab" aria-selected="false" data-value="yarn">yarn</button>
           <button role="tab" aria-selected="false" data-value="bun">bun</button>
         </div>
-        <div class="code"><div class="code-bar"><span class="code-label">Terminal</span><button class="copy" type="button" data-copy-from="pm-command">Copy</button></div><pre><code id="pm-command">npm i momenta</code></pre></div>
+        <div class="code"><div class="code-bar"><span class="code-label">Terminal</span><button class="copy" type="button" data-copy-from="pm-command">Copy</button></div><pre><code id="pm-command">npm i statelines</code></pre></div>
         <p style="margin-top:14px">Importing one figure bundles only that figure. The whole library is about 30 KB gzipped.</p>
       </section>
 
@@ -63,14 +63,14 @@
           <button role="tab" aria-selected="false" data-value="cdn">CDN</button>
         </div>
         <div data-panel="react">
-          <div class="code"><div class="code-bar"><span class="code-label">app/page.tsx</span></div><pre><code>import { Upload } from "momenta/react";
+          <div class="code"><div class="code-bar"><span class="code-label">app/page.tsx</span></div><pre><code>import { Upload } from "statelines/react";
 
 export default function Page({ uploading }: { uploading: boolean }) {
   return &lt;Upload state={uploading ? "loading" : "idle"} style={{ width: 240 }} /&gt;;
 }</code></pre></div>
         </div>
         <div data-panel="vanilla" hidden>
-          <div class="code"><div class="code-bar"><span class="code-label">main.ts</span></div><pre><code>import { pay } from "momenta";
+          <div class="code"><div class="code-bar"><span class="code-label">main.ts</span></div><pre><code>import { pay } from "statelines";
 
 const figure = pay(document.getElementById("checkout")!, { state: "loading" });
 
@@ -81,7 +81,7 @@ figure.destroy();                     // when the element is removed</code></pre
           <div class="code"><div class="code-bar"><span class="code-label">index.html</span></div><pre><code>&lt;div id="figure" style="width: 240px"&gt;&lt;/div&gt;
 
 &lt;script type="module"&gt;
-  import { upload } from "https://esm.sh/momenta";
+  import { upload } from "https://esm.sh/statelines";
 
   upload(document.getElementById("figure"), { state: "loading" });
 &lt;/script&gt;</code></pre></div>
@@ -108,7 +108,7 @@ figure.destroy();                     // when the element is removed</code></pre
       <section id="empty-states">
         <h2>Empty states</h2>
         <p>A figure works as an empty state at 160 to 240&nbsp;px wide, above a heading and one action. Its resting picture is the illustration; the pointer is a bonus.</p>
-        <div class="code" style="margin-top:16px"><div class="code-bar"><span class="code-label">no-results.tsx</span></div><pre><code>import { Search } from "momenta/react";
+        <div class="code" style="margin-top:16px"><div class="code-bar"><span class="code-label">no-results.tsx</span></div><pre><code>import { Search } from "statelines/react";
 
 export function NoResults({ onClear }: { onClear: () =&gt; void }) {
   return (
@@ -123,7 +123,7 @@ export function NoResults({ onClear }: { onClear: () =&gt; void }) {
 
       <section id="react">
         <h2>React</h2>
-        <p>Import any figure from <span class="inline">momenta/react</span>. Each one renders a <span class="inline">&lt;div&gt;</span>, accepts any <span class="inline">&lt;div&gt;</span> attribute, and forwards its ref. The module is client-side, so a Server Component can render it directly.</p>
+        <p>Import any figure from <span class="inline">statelines/react</span>. Each one renders a <span class="inline">&lt;div&gt;</span>, accepts any <span class="inline">&lt;div&gt;</span> attribute, and forwards its ref. The module is client-side, so a Server Component can render it directly.</p>
         <pre class="signature">&lt;Upload
   state?: "idle" | "loading" | "success" | "error" | "empty"
   progress?: number        // 0–1, during loading
@@ -154,7 +154,7 @@ export function NoResults({ onClear }: { onClear: () =&gt; void }) {
       <section id="server">
         <h2>Server rendering</h2>
         <p>Render one settled frame to a string, for static exports, email, or server-side pages. Include <span class="inline">styles</span> once on the page so the colours apply.</p>
-        <div class="code" style="margin-top:14px"><div class="code-bar"><span class="code-label">server.ts</span></div><pre><code>import { renderToString, styles, receipt } from "momenta";
+        <div class="code" style="margin-top:14px"><div class="code-bar"><span class="code-label">server.ts</span></div><pre><code>import { renderToString, styles, receipt } from "statelines";
 
 const html = `&lt;style&gt;${styles}&lt;/style&gt;` +
   renderToString(receipt, { state: "success" });</code></pre></div>
@@ -198,14 +198,14 @@ const html = `&lt;style&gt;${styles}&lt;/style&gt;` +
           <table>
             <thead><tr><th>Property</th><th>Role</th></tr></thead>
             <tbody>
-              <tr><td><code>--momenta-plate</code></td><td>The surface each figure sits on. Plates are filled with it to hide what is behind, so set it to your background colour.</td></tr>
-              <tr><td><code>--momenta-hi</code></td><td>What is acting right now: the active object, the figure's focus.</td></tr>
-              <tr><td><code>--momenta-edge</code></td><td>Silhouettes.</td></tr>
-              <tr><td><code>--momenta-mid</code></td><td>Creases and secondary lines.</td></tr>
-              <tr><td><code>--momenta-lo</code></td><td>Guides and what recedes.</td></tr>
-              <tr><td><code>--momenta-ok</code></td><td>Success.</td></tr>
-              <tr><td><code>--momenta-err</code></td><td>Error.</td></tr>
-              <tr><td><code>--momenta-stroke</code></td><td>Stroke width in CSS pixels.</td></tr>
+              <tr><td><code>--statelines-plate</code></td><td>The surface each figure sits on. Plates are filled with it to hide what is behind, so set it to your background colour.</td></tr>
+              <tr><td><code>--statelines-hi</code></td><td>What is acting right now: the active object, the figure's focus.</td></tr>
+              <tr><td><code>--statelines-edge</code></td><td>Silhouettes.</td></tr>
+              <tr><td><code>--statelines-mid</code></td><td>Creases and secondary lines.</td></tr>
+              <tr><td><code>--statelines-lo</code></td><td>Guides and what recedes.</td></tr>
+              <tr><td><code>--statelines-ok</code></td><td>Success.</td></tr>
+              <tr><td><code>--statelines-err</code></td><td>Error.</td></tr>
+              <tr><td><code>--statelines-stroke</code></td><td>Stroke width in CSS pixels.</td></tr>
             </tbody>
           </table>
         </div>
@@ -225,7 +225,7 @@ const html = `&lt;style&gt;${styles}&lt;/style&gt;` +
       <section id="custom">
         <h2>Make your own</h2>
         <p>A figure is a <span class="inline">setup</span> that creates springs, and a <span class="inline">draw</span> that describes one frame. The scene helpers handle projection, depth and tones, so a new figure matches the rest.</p>
-        <div class="code" style="margin-top:14px"><div class="code-bar"><span class="code-label">beacon.ts</span></div><pre><code>import { defineFigure } from "momenta";
+        <div class="code" style="margin-top:14px"><div class="code-bar"><span class="code-label">beacon.ts</span></div><pre><code>import { defineFigure } from "statelines";
 
 export const beacon = defineFigure({
   name: "Beacon",

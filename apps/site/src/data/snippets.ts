@@ -1,4 +1,4 @@
-import type { FigureOptions, FigureState } from "momenta";
+import type { FigureOptions, FigureState } from "statelines";
 import type { Entry } from "./catalog";
 
 /** What the playground controls set. `undefined` means "use the default". */
@@ -57,8 +57,8 @@ export function reactSnippet(entry: Entry, s: Settings): string {
   const name = entry.figure.definition.name;
   const props = propsOf(entry, s);
   const inline = `<${name} ${props.join(" ")} />`;
-  if (inline.length <= 72) return `import { ${name} } from "momenta/react";\n\n${inline}`;
-  return `import { ${name} } from "momenta/react";\n\n<${name}\n${props.map(p => `  ${p}`).join("\n")}\n/>`;
+  if (inline.length <= 72) return `import { ${name} } from "statelines/react";\n\n${inline}`;
+  return `import { ${name} } from "statelines/react";\n\n<${name}\n${props.map(p => `  ${p}`).join("\n")}\n/>`;
 }
 
 /** The vanilla usage for a figure, with the current options. */
@@ -69,5 +69,5 @@ export function vanillaSnippet(entry: Entry, s: Settings): string {
     .filter(([, v]) => v !== undefined)
     .map(([k, v]) => `  ${k}: ${typeof v === "string" ? `"${v}"` : typeof v === "object" ? JSON.stringify(v) : String(v)},`);
   const body = lines.length ? `{\n${lines.join("\n")}\n}` : "";
-  return `import { ${fn} } from "momenta";\n\n${fn}(document.getElementById("figure")${body ? `, ${body}` : ""});`;
+  return `import { ${fn} } from "statelines";\n\n${fn}(document.getElementById("figure")${body ? `, ${body}` : ""});`;
 }

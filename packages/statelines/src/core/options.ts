@@ -39,9 +39,9 @@ export function cssVariables(colors?: FigureColors, stroke?: number): Record<str
   const vars: Record<string, string> = {};
   for (const key of COLOR_KEYS) {
     const value = colors?.[key];
-    if (value) vars[`--momenta-${key}`] = value;
+    if (value) vars[`--statelines-${key}`] = value;
   }
   const width = optionalFinite(stroke);
-  if (width !== undefined) vars["--momenta-stroke"] = String(clamp(width, 0.25, 4));
+  if (width !== undefined) vars["--statelines-stroke"] = String(clamp(width, 0.25, 4));
   return vars;
 }

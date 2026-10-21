@@ -17,7 +17,7 @@ function wireTabs(group: string, onSelect: (value: string) => void): void {
 }
 
 // Install: the command follows the package manager.
-const commands: Record<string, string> = { npm: "npm i momenta", pnpm: "pnpm add momenta", yarn: "yarn add momenta", bun: "bun add momenta" };
+const commands: Record<string, string> = { npm: "npm i statelines", pnpm: "pnpm add statelines", yarn: "yarn add statelines", bun: "bun add statelines" };
 wireTabs("pm", value => { $("#pm-command").textContent = commands[value] ?? commands.npm ?? ""; });
 
 // Quick start: React, vanilla and CDN panels.

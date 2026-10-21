@@ -46,9 +46,9 @@ describe("styling options", () => {
 
   it("writes per-figure colours and stroke as custom properties", () => {
     const html = renderToString(figures.pay, { colors: { ok: "#0a0", hi: "rebeccapurple" }, stroke: 1.5 });
-    expect(html).toContain("--momenta-ok:#0a0");
-    expect(html).toContain("--momenta-hi:rebeccapurple");
-    expect(html).toContain("--momenta-stroke:1.5");
+    expect(html).toContain("--statelines-ok:#0a0");
+    expect(html).toContain("--statelines-hi:rebeccapurple");
+    expect(html).toContain("--statelines-stroke:1.5");
   });
 
   it("escapes colour values", () => {

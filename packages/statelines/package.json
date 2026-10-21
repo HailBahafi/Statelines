@@ -1,5 +1,5 @@
 {
-  "name": "momenta",
+  "name": "statelines",
   "version": "0.3.0",
   "description": "101 isometric line figures for the moments every app has: uploading, paying, signing in, matching creators, waiting on AI. One `state` prop, zero dependencies.",
   "license": "MIT",

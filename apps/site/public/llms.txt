@@ -1,18 +1,18 @@
-# momenta
+# statelines
 
 > 101 isometric line figures for the moments every app has. SVG, zero dependencies, ESM. A function per figure and a React component per figure. Every figure takes the same five options, and `state` is the one that matters.
 
 ## Install
 
-npm i momenta
+npm i statelines
 
 ## Use
 
-React: `import { Upload } from "momenta/react"` then `<Upload state="loading" />`. Each component renders a `<div>`, forwards its ref, and accepts any `<div>` attribute.
+React: `import { Upload } from "statelines/react"` then `<Upload state="loading" />`. Each component renders a `<div>`, forwards its ref, and accepts any `<div>` attribute.
 
-Vanilla: `import { upload } from "momenta"` then `const figure = upload(element, { state: "loading" })`; `figure.update({ state: "success" })`; `figure.destroy()`. In `update`, a key set to `undefined` returns to its default; a key left out keeps its value.
+Vanilla: `import { upload } from "statelines"` then `const figure = upload(element, { state: "loading" })`; `figure.update({ state: "success" })`; `figure.destroy()`. In `update`, a key set to `undefined` returns to its default; a key left out keeps its value.
 
-Server: `import { renderToString, styles, upload } from "momenta"` returns the markup of one settled frame. Put `styles` on the page once.
+Server: `import { renderToString, styles, upload } from "statelines"` returns the markup of one settled frame. Put `styles` on the page once.
 
 A figure fills its element's width at a 5:4 aspect ratio. As an empty state it works at 160–240px wide, above a heading and one action.
 
@@ -52,8 +52,8 @@ System: Connection (offline), NotFound (404), Deploy (deploys, builds), Connect 
 
 ## Theme
 
-Custom properties, set on the figure or any ancestor: `--momenta-plate` (the colour the figure sits on; plates are filled with it to hide what is behind), `--momenta-hi`, `--momenta-edge`, `--momenta-mid`, `--momenta-lo`, `--momenta-ok`, `--momenta-err`, `--momenta-stroke` (stroke width in CSS pixels).
+Custom properties, set on the figure or any ancestor: `--statelines-plate` (the colour the figure sits on; plates are filled with it to hide what is behind), `--statelines-hi`, `--statelines-edge`, `--statelines-mid`, `--statelines-lo`, `--statelines-ok`, `--statelines-err`, `--statelines-stroke` (stroke width in CSS pixels).
 
 ## Make your own
 
-`defineFigure({ name, label, setup, draw })`. See docs/ANATOMY.md and the momenta-create skill in skills/.
+`defineFigure({ name, label, setup, draw })`. See docs/ANATOMY.md and the statelines-create skill in skills/.

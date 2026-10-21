@@ -15,7 +15,7 @@ pnpm build      # library and site
 ## Building a figure
 
 1. Read [docs/RULES.md](docs/RULES.md) and [docs/ANATOMY.md](docs/ANATOMY.md).
-2. Add `packages/momenta/src/figures/<shelf>/<name>.ts` with `defineFigure`, and export it from the shelf's `index.ts`.
+2. Add `packages/statelines/src/figures/<shelf>/<name>.ts` with `defineFigure`, and export it from the shelf's `index.ts`.
 3. Run `pnpm generate`. It rebuilds the React exports, the site catalog, and the test lists from your source. Commit what it changes.
 4. Run `pnpm test`. The sweep checks that every state draws, idle comes to rest, loading keeps moving, and the pointer is answered.
 5. Run `pnpm dev` and look at your figure in every state, in both themes, at 200 px and at full width.

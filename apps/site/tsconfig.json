@@ -11,7 +11,7 @@
     "noEmit": true,
     "skipLibCheck": true,
     "baseUrl": ".",
-    "paths": { "momenta": ["../../packages/momenta/src/index.ts"] }
+    "paths": { "statelines": ["../../packages/statelines/src/index.ts"] }
   },
   "include": ["src"]
 }

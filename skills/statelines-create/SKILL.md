@@ -1,11 +1,11 @@
 ---
-name: momenta-create
-description: Draw a new momenta figure for a moment in an app (a screen, a flow, a status) from a short idea. Use when the user types /momenta-create <idea> or asks for a new momenta figure, an animated empty state, or a state illustration in the momenta style.
+name: statelines-create
+description: Draw a new statelines figure for a moment in an app (a screen, a flow, a status) from a short idea. Use when the user types /statelines-create <idea> or asks for a new statelines figure, an animated empty state, or a state illustration in the statelines style.
 ---
 
-# momenta-create
+# statelines-create
 
-You are drawing one new figure for the momenta library. The result is a single TypeScript file that calls `defineFigure`, plus its React export and a catalog entry.
+You are drawing one new figure for the statelines library. The result is a single TypeScript file that calls `defineFigure`, plus its React export and a catalog entry.
 
 ## Before drawing
 

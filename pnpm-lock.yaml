@@ -17,7 +17,7 @@ importers:
         specifier: ^5.4.2
         version: 5.4.21
 
-  packages/momenta:
+  packages/statelines:
     devDependencies:
       '@types/react':
         specifier: ^18.3.3

@@ -11,17 +11,17 @@ const DARK: Palette = {
 
 /** Each internal colour falls back to a public custom property, so users can theme from any ancestor. */
 const vars = (p: Palette): string =>
-  `--_p:var(--momenta-plate,${p.plate});--_h:var(--momenta-hi,${p.hi});--_e:var(--momenta-edge,${p.edge});` +
-  `--_m:var(--momenta-mid,${p.mid});--_l:var(--momenta-lo,${p.lo});--_ok:var(--momenta-ok,${p.ok});` +
-  `--_er:var(--momenta-err,${p.err});`;
+  `--_p:var(--statelines-plate,${p.plate});--_h:var(--statelines-hi,${p.hi});--_e:var(--statelines-edge,${p.edge});` +
+  `--_m:var(--statelines-mid,${p.mid});--_l:var(--statelines-lo,${p.lo});--_ok:var(--statelines-ok,${p.ok});` +
+  `--_er:var(--statelines-err,${p.err});`;
 
-const S = ".momenta svg";
+const S = ".statelines svg";
 
 export const styles =
-  `.momenta{${vars(LIGHT)}--_sw:var(--momenta-stroke,1);display:block}` +
-  `@media (prefers-color-scheme:dark){.momenta[data-theme=auto]{${vars(DARK)}}}` +
-  `:is(.dark,[data-theme=dark]) .momenta[data-theme=auto],.momenta[data-theme=dark]{${vars(DARK)}}` +
-  `:is(.light,[data-theme=light]) .momenta[data-theme=auto]{${vars(LIGHT)}}` +
+  `.statelines{${vars(LIGHT)}--_sw:var(--statelines-stroke,1);display:block}` +
+  `@media (prefers-color-scheme:dark){.statelines[data-theme=auto]{${vars(DARK)}}}` +
+  `:is(.dark,[data-theme=dark]) .statelines[data-theme=auto],.statelines[data-theme=dark]{${vars(DARK)}}` +
+  `:is(.light,[data-theme=light]) .statelines[data-theme=auto]{${vars(LIGHT)}}` +
   `${S}{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y}` +
   `${S} *{fill:none;vector-effect:non-scaling-stroke;stroke-width:var(--_sw);stroke-linejoin:round;stroke-linecap:round}` +
   `${S} .w{stroke-width:calc(var(--_sw)*2)}${S} .d{stroke-dasharray:3 3}` +
@@ -30,7 +30,7 @@ export const styles =
   `${S} .fe{fill:var(--_e)}${S} .fh{fill:var(--_h)}${S} .fk{fill:var(--_ok)}${S} .fx{fill:var(--_er)}` +
   `${S} .fm{fill:var(--_m)}${S} .fl{fill:var(--_l)}`;
 
-const STYLE_ID = "momenta-styles";
+const STYLE_ID = "statelines-styles";
 
 export function injectStyles(): void {
   if (typeof document === "undefined" || document.getElementById(STYLE_ID)) return;

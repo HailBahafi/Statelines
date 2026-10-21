@@ -1,5 +1,5 @@
 import "../styles/site.css";
-import { FIGURE_STATES } from "momenta";
+import { FIGURE_STATES } from "statelines";
 import { findEntry, neighbours, shelfOf, slugOf, type Entry } from "../data";
 import { DEFAULTS, reactSnippet, toOptions, vanillaSnippet, type Settings } from "../data/snippets";
 import { applyStoredTheme, mountFooter, mountHeader } from "../ui/shell";
@@ -26,7 +26,7 @@ if (!entry) {
 function render(figure: Entry): void {
   const shelf = shelfOf(figure);
   const name = figure.figure.definition.name;
-  document.title = `${name} · momenta`;
+  document.title = `${name} · statelines`;
   document.querySelector('meta[name="description"]')?.setAttribute("content", `${name}: ${figure.use}. Every state, every option, and the code to use it.`);
   const settings: Settings = { ...DEFAULTS, colors: {} };
 

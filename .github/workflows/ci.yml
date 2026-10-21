@@ -19,7 +19,7 @@ jobs:
       - name: Check the generated files are current
         run: |
           python3 scripts/generate.py
-          git diff --exit-code -- packages/momenta/src/react apps/site/src/data packages/momenta/test/lists.ts
+          git diff --exit-code -- packages/statelines/src/react apps/site/src/data packages/statelines/test/lists.ts
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build

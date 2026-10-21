@@ -10,7 +10,7 @@ export type FigureComponent = ForwardRefExoticComponent<FigureProps & RefAttribu
 
 /** Wraps a figure as a React component that renders a `<div>` and forwards its ref. */
 export function createComponent(figure: Figure<any>): FigureComponent {
-  const Component = forwardRef<HTMLDivElement, FigureProps>(function MomentaFigure(props, ref) {
+  const Component = forwardRef<HTMLDivElement, FigureProps>(function StatelinesFigure(props, ref) {
     const {
       state, intensity, theme, label, play, speed, progress, count, interactive, marks, colors, stroke,
       "aria-label": ariaLabel, ...rest

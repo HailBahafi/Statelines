@@ -33,6 +33,6 @@ export function renderToString(figure: Figure<any> | FigureDefinition<any>, opti
   const vars = Object.entries(cssVariables(options.colors, options.stroke)).map(([k, v]) => `${k}:${escape(v)}`).join(";");
   const style = vars ? ` style="${vars}"` : "";
   const label = escape(options.label ?? definition.label);
-  return `<div class="momenta" data-theme="${options.theme ?? "auto"}"${style}>` +
+  return `<div class="statelines" data-theme="${options.theme ?? "auto"}"${style}>` +
     `<svg viewBox="${VIEWBOX}" role="img" aria-label="${label}"><g>${markup}</g></svg></div>`;
 }

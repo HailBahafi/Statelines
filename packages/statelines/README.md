@@ -1,8 +1,8 @@
-# momenta
+# statelines
 
 Figures for the moments every app has.
 
-Uploading a file, paying, typing a verification code, waiting on an AI reply, matching a creator to a brand. momenta is 101 isometric line drawings that show what your app is doing through a single `state` prop, and lean toward the pointer while they rest.
+Uploading a file, paying, typing a verification code, waiting on an AI reply, matching a creator to a brand. statelines is 101 isometric line drawings that show what your app is doing through a single `state` prop, and lean toward the pointer while they rest.
 
 - **One prop that means something.** `idle`, `loading`, `success`, `error`, `empty`. Wire it to your app's real state and the figure tells the story.
 - **Colour only when it matters.** Everything is grey line until a state means something: green for success, red for error.
@@ -14,7 +14,7 @@ Uploading a file, paying, typing a verification code, waiting on an AI reply, ma
 ## Install
 
 ```sh
-npm i momenta
+npm i statelines
 ```
 
 ## Use
@@ -22,7 +22,7 @@ npm i momenta
 ### React
 
 ```tsx
-import { Upload } from "momenta/react";
+import { Upload } from "statelines/react";
 
 export function Dropzone({ status }: { status: "idle" | "uploading" | "done" | "failed" }) {
   const state = { idle: "idle", uploading: "loading", done: "success", failed: "error" }[status];
@@ -35,7 +35,7 @@ Each component renders a `<div>`, forwards its ref, and accepts any `<div>` attr
 ### Vanilla
 
 ```ts
-import { pay } from "momenta";
+import { pay } from "statelines";
 
 const figure = pay(document.getElementById("checkout")!, { state: "loading" });
 figure.update({ state: "success" });
@@ -47,7 +47,7 @@ In `update`, a key set to `undefined` returns to its default; a key left out kee
 ### Server and static export
 
 ```ts
-import { renderToString, styles, search } from "momenta";
+import { renderToString, styles, search } from "statelines";
 
 const html = `<style>${styles}</style>` + renderToString(search, { state: "empty" });
 ```
@@ -57,7 +57,7 @@ const html = `<style>${styles}</style>` + renderToString(search, { state: "empty
 A figure fills its element's width at 5:4. At 160 to 240px it sits well above a heading and one action:
 
 ```tsx
-import { Search } from "momenta/react";
+import { Search } from "statelines/react";
 
 export function NoResults({ onClear }: { onClear: () => void }) {
   return (
@@ -140,21 +140,21 @@ Set any of these on the figure or an ancestor:
 
 | Property | |
 | --- | --- |
-| `--momenta-plate` | The colour the figure sits on. Plates are filled with it to hide what is behind, so match your background. |
-| `--momenta-hi` | The thing that is acting right now. |
-| `--momenta-edge` | Silhouettes. |
-| `--momenta-mid` | Creases and secondary lines. |
-| `--momenta-lo` | Guides and what recedes. |
-| `--momenta-ok` | Success. |
-| `--momenta-err` | Error. |
-| `--momenta-stroke` | Stroke width in CSS pixels, at any size. |
+| `--statelines-plate` | The colour the figure sits on. Plates are filled with it to hide what is behind, so match your background. |
+| `--statelines-hi` | The thing that is acting right now. |
+| `--statelines-edge` | Silhouettes. |
+| `--statelines-mid` | Creases and secondary lines. |
+| `--statelines-lo` | Guides and what recedes. |
+| `--statelines-ok` | Success. |
+| `--statelines-err` | Error. |
+| `--statelines-stroke` | Stroke width in CSS pixels, at any size. |
 
 ## Make your own
 
-A figure is a `setup` that creates springs and a `draw` that describes one frame. See [docs/ANATOMY.md](docs/ANATOMY.md), the ten rules in [docs/RULES.md](docs/RULES.md), and the `momenta-create` skill in [skills/](skills/momenta-create/SKILL.md), which lets a coding agent draw a new figure to the same rules.
+A figure is a `setup` that creates springs and a `draw` that describes one frame. See [docs/ANATOMY.md](docs/ANATOMY.md), the ten rules in [docs/RULES.md](docs/RULES.md), and the `statelines-create` skill in [skills/](skills/statelines-create/SKILL.md), which lets a coding agent draw a new figure to the same rules.
 
 ```ts
-import { defineFigure } from "momenta";
+import { defineFigure } from "statelines";
 
 export const beacon = defineFigure({
   name: "Beacon",
@@ -173,7 +173,7 @@ export const beacon = defineFigure({
 ## Repository
 
 ```
-packages/momenta      the library (ESM, zero dependencies)
+packages/statelines      the library (ESM, zero dependencies)
   src/engine          projection, springs, scene, the shared frame loop, styles
   src/core            types, the runner, DOM mounting, static rendering
   src/figures         101 figures in thirteen shelves, plus shared shapes
@@ -184,7 +184,7 @@ apps/site             the website: home, figures, one page per figure, docs
   src/data            the catalog (generated) and lookups
   src/ui              shared shell and DOM helpers
 scripts/generate.py   rebuilds the generated files from the figure sources
-skills/momenta-create the agent skill for drawing new figures
+skills/statelines-create the agent skill for drawing new figures
 docs                  rules and anatomy of a figure, for contributors
 ```
 
@@ -214,7 +214,7 @@ The repository is ready for Vercel as it is:
 
 1. Push it to GitHub.
 2. In Vercel, choose **Add New → Project** and import the repository. Leave the root directory at the top level.
-3. Vercel reads `vercel.json`: it runs `pnpm install`, builds with `pnpm --filter momenta-site build`, serves `apps/site/dist`, and rewrites `/figures/<name>` to the figure page.
+3. Vercel reads `vercel.json`: it runs `pnpm install`, builds with `pnpm --filter statelines-site build`, serves `apps/site/dist`, and rewrites `/figures/<name>` to the figure page.
 
 Nothing else is needed. Pull requests get preview deployments automatically.
 
