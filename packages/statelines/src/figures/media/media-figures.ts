@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { clamp, falloff, lerp, smoothstep } from "../../engine/math";
 import type { Scene, Tone, Vec3 } from "../../engine/scene";
-import { faceArc, facing, frontArc, heart } from "../shapes";
+import { faceArc, facing, frontArc } from "../shapes";
 
 const TAU = Math.PI * 2;
 
@@ -357,101 +357,312 @@ export const vinyl = defineFigure({
 });
 
 
+/** The review card faces the viewer, its bottom edge (v = 18) on the plate; (u, v) run across and up its face. */
+const card = (u: number, v: number, front = 0): Vec3 => {
+  const p = facing(0, 0, -14, u, v);
+  return [p[0] + front, p[1] + front, p[2]];
+};
+const STAR = { v: 64, pitch: 22, R: 9.5, r: 4 };
+const starPts = (cu: number, cv: number, s = 1): [number, number][] =>
+  Array.from({ length: 10 }, (_, i) => {
+    const a = Math.PI / 2 + (i * Math.PI) / 5, r = (i % 2 ? STAR.r : STAR.R) * s;
+    return [cu + r * Math.cos(a), cv + r * Math.sin(a)];
+  });
+
 /** A star rating being filled in. Use for ratings, reviews, scores and feedback. `count`: stars, 3–5. */
 export const rating = defineFigure({
   name: "Rating",
   label: "A row of stars being filled",
-  offset: 0,
-  setup: ({ spring }) => ({ fill: Array.from({ length: 5 }, () => spring(0, 180, 16)) }),
+  offset: 25,
+  setup: ({ spring }) => ({ fill: Array.from({ length: 5 }, () => spring(0, 180, 16)), drop: spring(0, 120, 14) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
-    const shake = ctx.shake(), g = ctx.ground(0);
-    const n = ctx.count(5, 5, 3), pitch = 30, x0 = -((n - 1) * pitch) / 2;
-    const value = state === "success" ? n : state === "error" ? 1 : state === "empty" ? 0
-      : state === "loading" ? ctx.progress(n + 1) * n : state === "idle" ? Math.max(1, Math.min(n, Math.round((g.x - x0) / pitch + 0.5))) : Math.ceil(n * 0.6);
-    scene.box(0, 0, 0, pitch * n + 16, 36, 3, "base");
-    for (let k = 0; k < n; k++) {
-      const x = x0 + k * pitch, on = k < value;
-      const F = m.fill[k]!.to(on ? 1 : 0).value;
-      const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" && on && k === Math.floor(value) - 1 ? "hi" : "muted";
-      const pts = Array.from({ length: 10 }, (_, i) => {
-        const a = -Math.PI / 2 + (i * Math.PI) / 5;
-        const r = i % 2 ? 6.5 : 13;
-        return facing(x + (state === "error" && k === 0 ? shake : 0), 0, 4, r * Math.cos(a), r * Math.sin(a));
-      });
-      scene.polyline(pts, tone, { closed: true });
-      if (F > 0.02) scene.panel(pts.map(p => [p[0], p[1], p[2]] as Vec3), tone === "muted" ? "muted" : tone, F * 0.9);
+    const shake = ctx.shake();
+    const empty = state === "empty";
+    const n = ctx.count(5, 5, 3), u0 = -((n - 1) * STAR.pitch) / 2;
+    let value = Math.ceil(n * 0.6);
+    if (state === "success") value = n;
+    if (state === "error") value = 1;
+    if (state === "empty") value = 0;
+    if (state === "loading") value = ctx.progress(n + 1) * n;
+    if (state === "idle" && ctx.hover > 0.05) value = clamp(Math.round((ctx.pointer.x - u0) / STAR.pitch + 0.5), 1, n);
+    const D = m.drop.to(state === "error" ? 1 : 0).value;
+
+    scene.box(-4, -2, 0, 124, 96, 4, "base");
+    // The card stands in the slot of a holder: the holder's top, the card's back and face, then the holder's front.
+    const body: Tone = empty ? "ghost" : "base";
+    const H = 25, W = 68;
+    scene.panel([card(-W, H, -8), card(W, H, -8), card(W, H, 8), card(-W, H, 8)], body);
+    if (!empty) scene.panel([card(-62, 18, -4), card(62, 18, -4), card(62, 104, -4), card(-62, 104, -4)], "base");
+    scene.panel([card(-62, 18), card(62, 18), card(62, 104), card(-62, 104)], state === "success" ? "ok" : body);
+    scene.panel([card(-W, H, 0.3), card(W, H, 0.3), card(W, H, 8), card(-W, H, 8)], body);
+    scene.panel([card(-W, 18, 8), card(W, 18, 8), card(W, H, 8), card(-W, H, 8)], body);
+    if (empty) {
+      scene.polyline(starPts(0, STAR.v).map(([u, v]) => card(u, v, 0.2)), "ghost", { closed: true });
+      return;
     }
-    if (state === "error") scene.cross(x0, 0, 20, "err", ctx.fade());
+    const av = Array.from({ length: 16 }, (_, k) => card(-48 + 7 * Math.cos((k / 16) * TAU), 90 + 7 * Math.sin((k / 16) * TAU), 0.2));
+    scene.polyline(av, "muted", { closed: true });
+    scene.line(card(-36, 93, 0.2), card(-6, 93, 0.2), "base", { bold: true });
+    scene.line(card(-36, 86, 0.2), card(-18, 86, 0.2), "faint");
+    scene.line(card(-50, 42, 0.2), card(50, 42, 0.2), "faint");
+    scene.line(card(-50, 33, 0.2), card(22, 33, 0.2), "faint");
+
+    for (let k = 0; k < n; k++) {
+      const on = k < value, current = state === "loading" && on && k === Math.ceil(value) - 1;
+      const F = m.fill[k]!.to(on ? 1 : 0).value;
+      const cu = u0 + k * STAR.pitch;
+      const tone: Tone = state === "success" ? "ok" : state === "error" && k === 0 ? "err" : current ? "hi" : "base";
+      if (state === "error" && k === 1) {
+        // The second star would not take: it falls off the card and lies on the plate.
+        const lie = (u: number, v: number): Vec3 => {
+          const up = card(u + shake, v, 0.2), fu = (u - cu) / Math.sqrt(3), fv = v - STAR.v;
+          const flat: Vec3 = [cu / Math.sqrt(3) + 26 + fu - fv * 0.5, -cu / Math.sqrt(3) + 30 - fu - fv * 0.5, 4.05];
+          return [lerp(up[0], flat[0], D), lerp(up[1], flat[1], D), lerp(up[2], flat[2], D)];
+        };
+        scene.polyline(starPts(cu, STAR.v).map(([u, v]) => card(u, v, 0.2)), "faint", { closed: true });
+        scene.panel(starPts(cu, STAR.v).map(([u, v]) => lie(u, v)), "err");
+        continue;
+      }
+      // An unset star is a faint outline on the card; a set one stands out of it, layer on layer.
+      scene.polyline(starPts(cu, STAR.v).map(([u, v]) => card(u, v, 0.2)), "faint", { closed: true });
+      if (F < 0.03) continue;
+      const depth = 4 * F;
+      scene.panel(starPts(cu, STAR.v).map(([u, v]) => card(u, v, 0.3 + depth * 0.5)), tone);
+      scene.panel(starPts(cu, STAR.v).map(([u, v]) => card(u, v, 0.4 + depth)), tone);
+      scene.polyline(starPts(cu, STAR.v, 0.5).map(([u, v]) => card(u, v, 0.5 + depth)), tone === "base" ? "muted" : tone);
+    }
   },
 });
+
+/** The heart stands on its point on a pedestal, its face on the y+ plane; it is three layers thick. */
+const LIKE = { y: 4, k: 2.1, base: 14 };
+const heartAt = (t: number): [number, number] => [
+  16 * Math.sin(t) ** 3,
+  13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t),
+];
+/** The crack that splits the heart, top notch to bottom point. */
+const CRACK: [number, number][] = [[0, 5], [2.4, 1], [-2, -3.5], [2.2, -8], [-1.2, -12.5], [0, -17]];
 
 /** A heart beating while a message is liked. Use for likes, favourites and reactions. */
 export const like = defineFigure({
   name: "Like",
   label: "A heart beating",
-  offset: 2,
-  setup: ({ spring }) => ({ beat: spring(0, 220, 14) }),
+  offset: 18,
+  setup: ({ spring }) => ({ beat: spring(0, 220, 14), split: spring(0, 120, 14) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const pulse = state === "loading" ? 0.6 + 0.4 * Math.abs(Math.sin(ctx.time * 5)) : 0;
-    const b = m.beat.to(state === "success" ? 1 : ctx.hover * 0.6 + pulse * 0.2).value;
-    const size = 46 * (1 + b * 0.28);
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "empty" ? "ghost" : state === "loading" ? "hi" : "muted";
-    scene.box(0, 0, 0, 100, 80, 3, "base");
-    heart(scene, shake, 0, 10, size, tone, state === "empty" ? undefined : 1);
-    if (state === "error") scene.cross(0, 0, 12, "err", ctx.fade());
-    if (state === "success") scene.sparkle(42, -26, 30, 6, "ok", ctx.fade());
+    const empty = state === "empty";
+    const pulse = state === "loading" ? Math.abs(Math.sin(ctx.time * 5)) ** 3 : 0;
+    const b = m.beat.to(state === "success" ? 1 : state === "idle" ? ctx.hover * 0.35 : pulse * 0.6).value;
+    const S = m.split.to(state === "error" ? 1 : 0).value;
+    const tone: Tone = empty ? "ghost" : state === "loading" ? "hi" : state === "idle" ? "base" : ctx.verdict();
+    const k = LIKE.k * (1 + b * 0.18);
+    const tipZ = 4 + LIKE.base + 2;
+    // A heart point (u, v) on the layer `f` units in front of the face; halves turn about the tip.
+    const pt = (u: number, v: number, f: number, side = 0): Vec3 => {
+      const a = side * S * 0.32, du = u * k, dv = (v + 17) * k;
+      const ru = du * Math.cos(a) + dv * Math.sin(a) + side * S * 6, rv = -du * Math.sin(a) + dv * Math.cos(a);
+      return [ru + shake, LIKE.y + f, tipZ + rv];
+    };
+
+    scene.box(0, 0, 0, 112, 80, 4, "base");
+    // The pedestal: a round foot and a cup the point sits in.
+    scene.cylinder(0, LIKE.y - 3, 4, 16, 5, empty ? "ghost" : "base");
+    scene.cylinder(0, LIKE.y - 3, 9, 6, LIKE.base - 5 + 2, empty ? "ghost" : "base");
+    const outline = (f: number, side = 0): Vec3[] => Array.from({ length: 36 }, (_, i) => {
+      const [u, v] = heartAt((i / 36) * TAU);
+      return pt(u, v, f, side);
+    });
+    if (empty) { scene.polyline(outline(0), "ghost", { closed: true }); return; }
+
+    const layers = [-6, -3, 0];
+    if (S < 0.02) {
+      layers.forEach((f, i) => scene.panel(outline(f), i === 2 ? tone : tone === "base" ? "muted" : tone));
+      // A highlight on the upper left lobe.
+      scene.polyline(Array.from({ length: 7 }, (_, i) => {
+        const [u, v] = heartAt(3.95 + i * 0.12);
+        return pt(u * 0.68, v * 0.68 + 1.5, 0.1);
+      }), tone === "base" ? "muted" : tone);
+      return;
+    }
+    // Broken: the heart splits down a crack and its halves lean apart.
+    const half = (side: 1 | -1, f: number): Vec3[] => {
+      const arc = Array.from({ length: 19 }, (_, i) => {
+        const t = side > 0 ? (i / 18) * Math.PI : Math.PI + (i / 18) * Math.PI;
+        const [u, v] = heartAt(t);
+        return pt(u, v, f, side);
+      });
+      const crack = (side > 0 ? [...CRACK].reverse() : CRACK).map(([u, v]) => pt(u, v, f, side));
+      return [...arc, ...crack];
+    };
+    for (const side of [-1, 1] as const) layers.forEach((f, i) => scene.panel(half(side, f), i === 2 ? "err" : "err"));
   },
 });
+
+/** The tablet stands facing lower right; (u, z) run across and up its face. */
+const TAB = { t: 6, w: 92, z: 10, h: 96 };
+const TAB_FACE = TAB.t / 2;
+/** Comments: avatar position, then the bubble's left and right edges, bottom and height. */
+const PARENT = { au: -36, az: 92, l: -27, r: 40, z: 84, h: 18 };
+const REPLY = { au: -22, az: 68, l: -14, r: 40, z: 62, h: 14 };
+const NEW = { au: -22, az: 46, l: -14, r: 32, z: 40, h: 14 };
 
 /** A comment bubble with a reply thread. Use for comments, replies and discussion threads. */
 export const thread = defineFigure({
   name: "Thread",
   label: "A comment with replies beneath",
-  offset: 4,
-  setup: ({ spring }) => ({ reply: spring(0, 160, 18) }),
+  offset: 30,
+  setup: ({ spring }) => ({ reply: spring(0, 160, 18), lift: spring(0, 160, 18), fall: spring(0, 110, 14) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const R = m.reply.to(state === "success" ? 1 : state === "idle" ? ctx.hover : 0).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : "base";
-    scene.box(-18, -18, 4, 96, 30, 4, tone);
-    scene.polyline([[-44, -10, 8], [-54, -2, 8], [-40, -8, 8]] as Vec3[], tone === "base" ? "muted" : tone, { bold: true });
-    scene.line([-40, -20, 8.05], [14, -20, 8.05], "muted", { bold: true });
-    scene.line([-40, -10, 8.05], [-6, -10, 8.05], "faint");
-    scene.box(-4 + shake, 16 + R * 3, 4, 74, 24, 4, state === "empty" ? "ghost" : "muted");
-    scene.line([-30 + shake, 12 + R * 3, 8.05], [26 + shake, 12 + R * 3, 8.05], "faint");
-    scene.line([-30 + shake, 20 + R * 3, 8.05], [6 + shake, 20 + R * 3, 8.05], "faint");
-    if (state === "loading") for (let k = 0; k < 3; k++) scene.disc(-14 + k * 10, -18, 8.1, 2.4, Math.floor(ctx.time * 4) % 3 === k ? "hi" : "muted", { fill: true });
-    if (state === "success") scene.check(40, 16, 8, "ok", ctx.fade());
-    if (state === "error") scene.cross(40, 16, 8, "err", ctx.fade());
+    const empty = state === "empty";
+    const R = m.reply.to(state === "success" || state === "error" || state === "loading" ? 1 : 0).value;
+    const L = m.lift.to(state === "idle" ? ctx.hover : 0).value;
+    const F = m.fall.to(state === "error" ? 1 : 0).value;
+    const on = (u: number, z: number, f = 0.05): Vec3 => [TAB_FACE + f, -u, z];
+    const ring = (u: number, z: number, r: number, f = 0.1): Vec3[] =>
+      Array.from({ length: 14 }, (_, k) => on(u + r * Math.cos((k / 14) * TAU), z + r * Math.sin((k / 14) * TAU), f));
+    /** A bubble standing proud of the face by `depth`, with a tail toward its avatar and lines on it. */
+    const bubble = (b: typeof PARENT, depth: number, tone: Tone, lines: number[], dx = 0, dz = 0, opacity?: number) => {
+      const cu = (b.l + b.r) / 2, x = TAB_FACE + dx;
+      scene.box(x + depth / 2, -cu, b.z + dz, depth, b.r - b.l, b.h, tone, opacity);
+      const fx = x + depth + 0.05;
+      scene.panel([[fx, -b.l, b.z + dz + b.h - 3], [fx, -(b.l - 5), b.z + dz + b.h - 1], [fx, -b.l, b.z + dz + b.h - 7]], tone, opacity);
+      lines.forEach((w, i) => scene.line([fx, -(b.l + 5), b.z + dz + b.h - 5 - i * 6], [fx, -(b.l + 5 + w), b.z + dz + b.h - 5 - i * 6],
+        i === 0 ? (tone === "base" ? "muted" : tone) : "faint", { opacity }));
+    };
+
+    scene.box(6, 2, 0, 64, 118, 4, "base");
+    // The stand behind and the tablet with its bezel.
+    scene.box(-12, 0, 4, 18, 30, 3, empty ? "ghost" : "base");
+    scene.box(0, 0, 4, TAB.t + 4, TAB.w - 20, TAB.z - 4, empty ? "ghost" : "base");
+    scene.box(0, 0, TAB.z, TAB.t, TAB.w, TAB.h, empty ? "ghost" : "base");
+    const top = TAB.z + TAB.h;
+    scene.polyline([on(-42, TAB.z + 5), on(42, TAB.z + 5), on(42, top - 5), on(-42, top - 5)], empty ? "ghost" : "faint", { closed: true });
+    if (empty) {
+      scene.box(TAB_FACE + 1, -((PARENT.l + PARENT.r) / 2), PARENT.z, 2, PARENT.r - PARENT.l, PARENT.h, "ghost");
+      return;
+    }
+    // The reply field at the bottom with its send button.
+    scene.polyline([on(-38, 18), on(26, 18), on(26, 28), on(-38, 28)], "muted", { closed: true });
+    scene.line(on(-34, 23), on(-12, 23), "faint");
+    scene.polyline(ring(34, 23, 4.5), state === "loading" ? "hi" : "muted", { closed: true });
+
+    // The thread: a line from the first avatar down to each reply.
+    const joined = R > 0.5 && state !== "error";
+    const last = joined ? NEW : REPLY;
+    scene.polyline([on(PARENT.au, PARENT.az - 7), on(PARENT.au, last.az), on(REPLY.au - 5, last.az)], "muted");
+    if (joined) scene.line(on(PARENT.au, REPLY.az), on(REPLY.au - 5, REPLY.az), "muted");
+    scene.polyline(ring(PARENT.au, PARENT.az, 6), "base", { closed: true });
+    scene.polyline(ring(REPLY.au, REPLY.az, 5), "base", { closed: true });
+    bubble(PARENT, 3 + L * 3, "base", [36, 50]);
+    bubble(REPLY, 3, "base", [30]);
+
+    if (R < 0.03) return;
+    const tone: Tone = state === "loading" ? "hi" : state === "success" ? "ok" : state === "error" ? "err" : "base";
+    if (state === "error") {
+      // The reply would not post: it slides off the tablet and lands on the plate in front.
+      bubble(NEW, 3, "err", [26], F * 14 + shake * 0.3, -F * (NEW.z - 4));
+      return;
+    }
+    scene.polyline(ring(NEW.au, NEW.az, 5), tone, { closed: true, opacity: R });
+    if (state === "loading") {
+      bubble({ ...NEW, r: NEW.l + 22 }, 3 * R, "hi", [], 0, 0, R);
+      const active = Math.floor(ctx.time * 5) % 3;
+      for (let i = 0; i < 3; i++) {
+        scene.polyline(Array.from({ length: 9 }, (_, k) => on(NEW.l + 5 + i * 6 + 1.6 * Math.cos((k / 8) * TAU), NEW.z + 7 + 1.6 * Math.sin((k / 8) * TAU), 3.1)),
+          i === active ? "hi" : "muted");
+      }
+      return;
+    }
+    bubble(NEW, 3 * R, tone, [26], 0, 0, R);
   },
 });
+
+/** The mast stands at the back right; the receiving set stands at the front left facing lower right. */
+const MAST = { x: 34, y: -24, foot: 13, head: 3, top: 90 };
+const SET = { x: -30, y: 22, t: 8, w: 62, z: 12, h: 44 };
+const SET_FACE = SET.x + SET.t / 2;
 
 /** A live stream: an antenna sending waves toward a screen. Use for live streams, broadcasts and real-time status. */
 export const live = defineFigure({
   name: "Live",
   label: "An antenna sending waves to a screen",
-  offset: 4,
-  setup: ({ spring }) => ({ tilt: spring(0, 120, 16) }),
+  offset: 22,
+  setup: ({ spring }) => ({ tilt: spring(0, 120, 16), picture: spring(0, 140, 18) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const tilt = m.tilt.to(state === "idle" ? (ctx.pointer.x / 140) * 0.25 * ctx.hover : 0).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 14, 0, 110, 66, 4, "base");
-    scene.box(-18, 12, 4, 54, 40, 4, tone);
-    scene.rect(-20, 12, 0, 16, 8.05, tone === "base" ? "muted" : tone);
-    scene.line([44, -10, 4], [44 + 14 * Math.sin(tilt) + shake, -10, 44 + 14 * Math.cos(tilt)], state === "loading" ? "hi" : "base", { bold: true });
-    scene.disc(44 + 14 * Math.sin(tilt) + shake, -10, 44 + 14 * Math.cos(tilt), 3, "hi", { fill: true });
-    if (state === "loading") for (let k = 0; k < 3; k++) {
-      const q = ctx.loop(1.6) + k / 3;
-      const r = 14 + 26 * (q % 1);
-      scene.arc(44, -10, 14 + 14 * Math.cos(tilt), r, -0.9, 0.9, "hi", { opacity: 1 - (q % 1) });
+    const empty = state === "empty";
+    const tilt = m.tilt.to(state === "idle" ? (ctx.pointer.x / 140) * 0.3 * ctx.hover : state === "error" ? 1.25 : 0).value;
+    const P = m.picture.to(state === "success" ? 1 : 0).value;
+    const tone: Tone = empty ? "ghost" : state === "loading" ? "hi" : state === "idle" ? "base" : ctx.verdict();
+    const frame: Tone = empty ? "ghost" : "base";
+
+    scene.box(0, 0, 0, 140, 104, 4, "base");
+    // The mast: four tapering legs, rings, and cross braces on the two near faces.
+    const leg = (sx: number, sy: number, z: number): Vec3 => {
+      const h = lerp(MAST.foot, MAST.head, (z - 4) / (MAST.top - 4));
+      return [MAST.x + sx * h, MAST.y + sy * h, z];
+    };
+    scene.box(MAST.x, MAST.y, 4, 32, 32, 3, frame);
+    const corners: [number, number][] = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+    for (const [sx, sy] of corners) scene.line(leg(sx, sy, 7), leg(sx, sy, MAST.top), frame);
+    const levels = [7, 34, 58, MAST.top];
+    for (let i = 0; i < levels.length; i++) {
+      scene.polyline(corners.map(([sx, sy]) => leg(sx, sy, levels[i]!)), empty ? "ghost" : "muted", { closed: true });
+      if (i === 0 || empty) continue;
+      const a = levels[i - 1]!, b = levels[i]!;
+      scene.line(leg(-1, 1, a), leg(1, 1, b), "muted");
+      scene.line(leg(1, 1, a), leg(-1, 1, b), "muted");
+      scene.line(leg(1, -1, a), leg(1, 1, b), "muted");
+      scene.line(leg(1, 1, a), leg(1, -1, b), "muted");
     }
-    if (state === "success") scene.check(-18, 12, 12, "ok", ctx.fade());
-    if (state === "error") scene.cross(-18, 12, 12, "err", ctx.fade());
+    // The aerial on top, bending over when the signal is lost, with a beacon at its tip.
+    const len = 18, bx = MAST.x + len * Math.sin(tilt) + shake * 0.4, bz = MAST.top + len * Math.cos(tilt);
+    const mid: Vec3 = [MAST.x + len * 0.5 * Math.sin(tilt * 0.4), MAST.y, MAST.top + len * 0.5 * Math.cos(tilt * 0.4)];
+    scene.polyline([[MAST.x, MAST.y, MAST.top], mid, [bx, MAST.y, bz]], tone, { bold: true });
+    scene.panel(faceArc(bx, MAST.y, bz, 3.2, 0, TAU, 12), tone === "base" ? "muted" : tone);
+    if (state === "loading") {
+      for (let k = 0; k < 3; k++) {
+        const q = (ctx.loop(1.6) + k / 3) % 1, r = 8 + 26 * q;
+        scene.polyline(faceArc(bx, MAST.y, bz, r, Math.PI - 0.7, Math.PI + 0.7, 12), "hi", { opacity: 1 - q });
+        scene.polyline(faceArc(bx, MAST.y, bz, r, -0.7, 0.7, 12), "hi", { opacity: 1 - q });
+      }
+    } else if (state === "success") {
+      for (const r of [10, 18]) {
+        scene.polyline(faceArc(bx, MAST.y, bz, r, Math.PI - 0.6, Math.PI + 0.6, 10), "ok");
+        scene.polyline(faceArc(bx, MAST.y, bz, r, -0.6, 0.6, 10), "ok");
+      }
+    }
+
+    // The set: feet, body and screen, a presenter on it and the live badge in the corner.
+    const on = (u: number, z: number, f = 0.05): Vec3 => [SET_FACE + f, SET.y - u, z];
+    scene.box(SET.x, SET.y - 20, 4, 14, 10, SET.z - 4, frame);
+    scene.box(SET.x, SET.y + 20, 4, 14, 10, SET.z - 4, frame);
+    scene.box(SET.x, SET.y, SET.z, SET.t, SET.w, SET.h, frame);
+    const z0 = SET.z + 4, z1 = SET.z + SET.h - 4, u1 = SET.w / 2 - 4;
+    scene.polyline([on(-u1, z0), on(u1, z0), on(u1, z1), on(-u1, z1)], empty ? "ghost" : "muted", { closed: true });
+    if (empty) return;
+    if (state === "error") {
+      // No signal: static across the glass where the picture was.
+      for (let i = 0; i < 5; i++) {
+        const z = z0 + 5 + i * 6.5, s = (i % 2 ? 5 : -3) + shake * 0.5;
+        scene.line(on(-u1 + 7 + s, z), on(u1 - 6 + s * 0.5, z), "err", { opacity: 0.7 });
+      }
+    } else {
+      const pt: Tone = P > 0.5 ? "ok" : state === "loading" ? "base" : "muted";
+      // The presenter: head and shoulders.
+      scene.polyline(Array.from({ length: 15 }, (_, k) => on(2 + 6 * Math.cos((k / 14) * TAU), z0 + 22 + 6 * Math.sin((k / 14) * TAU))), pt, { bold: P > 0.5 });
+      scene.polyline(Array.from({ length: 11 }, (_, k) => on(2 - 13 * Math.cos((k / 10) * Math.PI), z0 + 1 + 12 * Math.sin((k / 10) * Math.PI))), pt, { bold: P > 0.5 });
+    }
+    // The live badge: a pill with a dot and a word line.
+    const bu = -u1 + 4, bz2 = z1 - 7, badge: Tone = state === "idle" ? "muted" : tone;
+    scene.polyline([on(bu, bz2 - 3), on(bu + 14, bz2 - 3), on(bu + 14, bz2 + 3), on(bu, bz2 + 3)], badge, { closed: true });
+    scene.panel(Array.from({ length: 9 }, (_, k) => on(bu + 4 + 1.6 * Math.cos((k / 8) * TAU), bz2 + 1.6 * Math.sin((k / 8) * TAU), 0.1)), badge);
+    scene.line(on(bu + 7.5, bz2), on(bu + 11.5, bz2, 0.1), badge);
   },
 });
