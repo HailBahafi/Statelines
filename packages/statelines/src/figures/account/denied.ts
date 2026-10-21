@@ -6,14 +6,14 @@ import { badge, person } from "../shapes";
 const PIVOT: Vec3 = [-46, 0, 34];
 const LENGTH = 96;
 const THICK = 3.5;
-const LANE_X = 12;
+const LANE_X = 2;
 
 /** A barrier arm at a gate. Use for permissions, access denied, paywalls and approvals. */
 export const denied = defineFigure({
   name: "Denied",
   label: "A barrier arm at a gate",
   offset: 12,
-  setup: ({ spring }) => ({ angle: spring(0, 120, 16), walk: spring(34, 70, 16) }),
+  setup: ({ spring }) => ({ angle: spring(0, 120, 16), walk: spring(32, 70, 16) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
@@ -23,18 +23,18 @@ export const denied = defineFigure({
     if (state === "loading") { target = 0.06 + 0.05 * Math.sin(ctx.time * 7); m.angle.set(target); }
     const a = clamp(m.angle.to(target).value, -0.1, 1.2) + Math.abs(shake) * 0.012;
     // The visitor waits in front, walks through on success and is turned back on error.
-    const W = m.walk.to(state === "success" ? -26 : state === "error" ? 44 : 34).value;
+    const W = m.walk.to(state === "success" ? -26 : state === "error" ? 40 : 32).value;
     const arm: Tone = empty ? "ghost" : state === "loading" ? "hi" : ctx.verdict();
     const post: Tone = empty ? "muted" : "base";
 
-    scene.box(0, 2, 0, 150, 86, 4, "base");
+    scene.box(0, 2, 0, 150, 92, 4, "base");
     // Lane markings on the plate either side of the arm.
     if (!empty) for (const y of [-30, 30]) scene.line([LANE_X - 18, y, 4.05], [LANE_X + 18, y, 4.05], "faint", { bold: true });
 
     const visitor = (): void => {
       if (empty) return;
       const tone: Tone = state === "error" ? "err" : state === "success" ? "ok" : "base";
-      person(scene, LANE_X + (state === "error" ? shake : 0), W, 4, tone, undefined, 1.1);
+      person(scene, LANE_X + (state === "error" ? shake : 0), W, 4, tone, undefined, 1.3);
     };
     if (W < 0) visitor();
 
@@ -54,8 +54,8 @@ export const denied = defineFigure({
     }
 
     if (W >= 0) visitor();
-    if (empty) person(scene, LANE_X, 34, 4, "ghost", undefined, 1.1);
+    if (empty) person(scene, LANE_X, 32, 4, "ghost", undefined, 1.3);
 
-    badge(scene, -40, 30, 4, state, ctx.fade(), 12);
+    badge(scene, -42, 30, 4, state, ctx.fade(), 12);
   },
 });

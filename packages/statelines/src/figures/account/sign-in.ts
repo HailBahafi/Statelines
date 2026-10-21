@@ -22,7 +22,7 @@ export const signIn = defineFigure({
     const empty = state === "empty";
     let target = state === "success" ? 1.25 : state === "idle" ? 0.35 * clamp(ctx.hover) : 0;
     // Loading: someone tries the handle, the door rattles on its latch.
-    if (state === "loading") { target = 0.05 * Math.abs(Math.sin(ctx.time * 9)); m.angle.set(target); }
+    if (state === "loading") { target = 0.1 * Math.abs(Math.sin(ctx.time * 9)); m.angle.set(target); }
     const a = m.angle.to(target).value;
     const B = m.bolt.to(state === "error" ? 1 : 0).value;
     const wall: Tone = empty ? "muted" : "base";

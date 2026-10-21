@@ -57,6 +57,6 @@ export const profile = defineFigure({
     const px = ax + S * 26 + shake, py = ay + S * 26;
     person(scene, px, py, TOP + 2 * (1 - clamp(S)) + L, who, undefined, 1.2);
 
-    badge(scene, 32, -34, TOP, state, ctx.fade(), 12);
+    badge(scene, 34, -44, TOP, state, ctx.fade(), 12);
   },
 });

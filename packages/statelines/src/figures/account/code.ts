@@ -6,7 +6,7 @@ import { badge, frontArc } from "../shapes";
 const MAX = 8;
 const TYPE_EVERY = 0.38;
 const ROW_Y = 14;
-const LOCK = { x: 0, y: -40, w: 30, d: 16, h: 24 };
+const LOCK = { x: -6, y: -40, w: 36, d: 20, h: 28 };
 
 /** Keys of a one-time code and the lock they open. Use for two-factor, phone and email verification. `count`: digits, 4–8. */
 export const code = defineFigure({
@@ -33,7 +33,7 @@ export const code = defineFigure({
       : ctx.determinate ? Math.round((elapsed / period) * digits)
       : Math.min(digits, Math.floor(elapsed / TYPE_EVERY));
 
-    scene.box(0, -4, 0, 2 * half + 24, 116, 4, "base");
+    scene.box(0, -14, 0, 2 * half + 24, 96, 4, "base");
 
     // The lock behind the keys: its shackle lifts open when the code is accepted.
     const S = m.shackle.to(state === "success" ? 1 : 0).value;
@@ -42,9 +42,9 @@ export const code = defineFigure({
     // Open, the shackle rises and its right leg leaves the body.
     const arcZ = top + 7 + S * 12;
     scene.box(lx, ly, 4, LOCK.w, LOCK.d, LOCK.h, lockTone);
-    scene.box(lx - 9, ly, top, 3, 3, arcZ - top, lockTone);
-    scene.polyline(frontArc(lx, ly, arcZ, 9, 0, Math.PI, 16), lockTone, { bold: true });
-    scene.box(lx + 9, ly, top + S * 12, 3, 3, 7, lockTone);
+    scene.box(lx - 10, ly, top, 3, 3, arcZ - top, lockTone);
+    scene.polyline(frontArc(lx, ly, arcZ, 10, 0, Math.PI, 16), lockTone, { bold: true });
+    scene.box(lx + 10, ly, top + S * 12, 3, 3, 7, lockTone);
     if (!empty) {
       const face = ly + LOCK.d / 2 + 0.05;
       scene.polyline(frontArc(lx, face, 4 + LOCK.h * 0.58, 3, 0, Math.PI * 2, 10), lockTone === "base" ? "muted" : lockTone);
@@ -80,6 +80,6 @@ export const code = defineFigure({
       if (empty && k === 0) scene.line([x, ROW_Y - key * 0.3, 7 + h + 0.05], [x, ROW_Y + key * 0.3, 7 + h + 0.05], "muted", { bold: true });
     }
 
-    badge(scene, -half + 10, ROW_Y + 27, 4, state, ctx.fade(), 12);
+    badge(scene, half - 14, -44, 4, state, ctx.fade(), 12);
   },
 });
