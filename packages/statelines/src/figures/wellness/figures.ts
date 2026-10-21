@@ -2,7 +2,7 @@ import { defineFigure } from "../../core/define";
 import type { DrawContext } from "../../core/types";
 import { bump, clamp, lerp, smoothstep } from "../../engine/math";
 import type { Scene, Tone, Vec3 } from "../../engine/scene";
-import { faceArc, facing, frontArc, heart } from "../shapes";
+import { faceArc, facing, frontArc } from "../shapes";
 
 const TAU = Math.PI * 2;
 type UV = [number, number];
@@ -377,30 +377,76 @@ export const hydrate = defineFigure({
     for (const z of [24, 40, 56]) scene.arc(GX, GY, z, rw(z) + 1.05, Math.PI / 4 - 0.3, Math.PI / 4 + 0.3, "faint", { opacity: up });
   },
 });
-/** A heartbeat trace drawn across the frame. Use for heart rate, vitals and health monitoring. */
+/** The outline of a heart, `size` units across, centred on (0, 0). */
+const heartUV = (size: number): UV[] => Array.from({ length: 24 }, (_, i) => {
+  const t = (i / 24) * TAU, k = size / 32;
+  return [16 * Math.sin(t) ** 3 * k, (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * k];
+});
+
+/** One heartbeat over t in [0, 1): a P wave, the QRS spike and a T wave. */
+function beat(t: number): number {
+  if (t > 0.1 && t < 0.2) return 3 * Math.sin((Math.PI * (t - 0.1)) / 0.1);
+  if (t >= 0.3 && t < 0.34) return lerp(0, -3, (t - 0.3) / 0.04);
+  if (t >= 0.34 && t < 0.4) return lerp(-3, 22, (t - 0.34) / 0.06);
+  if (t >= 0.4 && t < 0.46) return lerp(22, -9, (t - 0.4) / 0.06);
+  if (t >= 0.46 && t < 0.5) return lerp(-9, 0, (t - 0.46) / 0.04);
+  if (t > 0.62 && t < 0.78) return 5 * Math.sin((Math.PI * (t - 0.62)) / 0.16);
+  return 0;
+}
+
+/** A heartbeat trace drawn across a bedside monitor. Use for heart rate, vitals and health monitoring. */
 export const pulse = defineFigure({
   name: "Pulse",
   label: "A heartbeat trace drawing across",
-  offset: 4,
-  setup: () => ({}),
-  draw(ctx) {
+  offset: 12,
+  setup: ({ spring }) => ({ clip: spring(0, 110, 13) }),
+  draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    const beat = (t: number) => (t > 0.4 && t < 0.46 ? 30 : t > 0.46 && t < 0.52 ? -18 : 0) + (t > 0.5 && t < 0.56 ? 8 : 0);
-    const draw = state === "loading" ? ctx.loop(2.2) : state === "success" ? 1 : state === "error" ? 0.45 : state === "empty" ? 0 : 0.7;
-    const pts: Vec3[] = [];
-    for (let i = 0; i <= 60; i++) {
-      const t = i / 60;
-      if (t > draw) break;
-      pts.push([-64 + 128 * t, shake * (state === "error" && t > 0.4 ? 1 : 0), 4 + beat(t) * 0.6]);
+    const empty = state === "empty";
+    const C = clamp(m.clip.to(state === "error" ? 1 : ctx.hover * 0.3).value, 0, 1.1);
+    const body = bodyTone(ctx), trace = accentTone(ctx, "muted");
+    const MX = -22 + shake, D = 20, W = 100, Z0 = 21, H = 60, face = MX + D / 2;
+    scene.box(0, 0, 0, 128, 116, 4, "base");
+
+    // The stand and the monitor, its screen looking down-right.
+    scene.box(MX, 0, 4, 30, 46, 5, body);
+    scene.box(MX, 0, 9, 8, 12, Z0 - 9, body);
+    scene.box(MX, 0, Z0, D, W, H, body);
+    if (empty) return;
+    const on = (u: number, z: number, d = 0.05): Vec3 => [face + d, -u, z];
+    const s0 = -44, s1 = 24, z0 = Z0 + 7, z1 = Z0 + H - 6, mid = Z0 + 30;
+    scene.polyline([on(s0, z0), on(s1, z0), on(s1, z1), on(s0, z1)], "muted", { closed: true });
+    scene.line(on(s0 + 2, mid - 12), on(s1 - 2, mid - 12), "faint");
+
+    // The trace: steady beats, a sweep while it reads, a flat line on error.
+    const pts: Vec3[] = [], from = s0 + 2, to = s1 - 2;
+    const sweep = state === "loading" ? lerp(from, to, ctx.loop(2.4)) : to;
+    const old: Vec3[] = [];
+    for (let u = from; u <= to + 0.01; u += 1) {
+      const z = mid + (state === "error" ? 0 : beat((((u - from) / 34) % 1 + 1) % 1));
+      if (u <= sweep) pts.push(on(u, z, 0.1));
+      else if (u > sweep + 6) old.push(on(u, z, 0.1));
     }
-    scene.box(0, 0, 0, 140, 70, 4, "base");
-    scene.line([-64, 0, 4.05], [64, 0, 4.05], "faint");
-    if (pts.length > 1) scene.polyline(pts, tone, { bold: true });
-    if (state === "success") scene.check(54, -26, 4, "ok", ctx.fade());
-    if (state === "error") scene.cross(54, -26, 4, "err", ctx.fade());
-    if (state === "idle") scene.polyline([[-64, 0, 4], [64, 0, 4]], "faint");
+    if (old.length > 1) scene.polyline(old, "faint");
+    if (pts.length > 1) scene.polyline(pts, trace, { bold: state !== "idle" });
+
+    // The side panel: a heart, a readout and a knob, with buttons under the screen.
+    let hs = 12;
+    if (state === "loading") hs = 12 * (1 + 0.25 * bump((ctx.loop(0.8) * 3) % 1));
+    scene.panel(heartUV(hs).map(([a, b]) => on(36 + a, z1 - 8 + b, 0.1)), state === "idle" ? "muted" : trace);
+    scene.line(on(29, z1 - 21), on(43, z1 - 21), "muted", { bold: true });
+    scene.line(on(29, z1 - 27), on(38, z1 - 27), "faint", { bold: true });
+    scene.polyline(sideArc(face + 0.1, -36, Z0 + 12, 5, 0, TAU, 14), "muted");
+    scene.line(on(36, Z0 + 12, 0.15), on(36, Z0 + 16, 0.15), "muted");
+    for (const u of [-34, -22, -10]) scene.box(face + 1, -u, Z0 + 1.5, 2, 7, 3.5, body);
+
+    // The lead runs off the side to a finger clip on the plate; on error the clip has sprung open.
+    const CX = 28, CY = 36;
+    scene.polyline([[MX + 3, W / 2 + 0.1, Z0 + 10], [MX + 5, W / 2 + 3, 4.5], [CX - 18, CY + 6, 4.5], [CX - 9, CY, 6]], "muted", { bold: true });
+    scene.box(CX, CY, 4, 18, 12, 4, body);
+    scene.box(CX + 2 * C, CY + 13 * C, lerp(8, 4, C) + 4 * bump(C), 16, 11, 4, body);
+    if (C < 0.5) scene.disc(CX + 3, CY, 12.1, 2, state === "loading" ? "hi" : "muted", { fill: true });
   },
 });
 
@@ -408,31 +454,69 @@ export const pulse = defineFigure({
 export const sunrise = defineFigure({
   name: "Sunrise",
   label: "A sun rising over a horizon",
-  offset: 4,
-  setup: ({ spring }) => ({ rise: spring(0.4, 100, 16) }),
+  offset: 16,
+  setup: ({ spring }) => ({ rise: spring(0.45, 100, 16), cloud: spring(0, 90, 15) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
-    const shake = ctx.shake();
-    let r = 0.4;
+    const empty = state === "empty";
+    let r = 0.5 + ctx.hover * 0.15;
     if (state === "loading") r = ctx.progress(4);
     if (state === "success") r = 1;
-    if (state === "error") r = 0.2;
-    if (state === "idle") r = 0.4 + ctx.hover * 0.2;
-    const R = m.rise.to(r).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    const sunZ = 4 + R * 30;
-    scene.box(0, 0, 0, 130, 80, 4, "base");
-    scene.line([-60, 0, 4.05], [60, 0, 4.05], "muted", { bold: true });
-    // The sun stands upright, facing the viewer, so it reads as a sun and not a flat disc.
-    scene.panel(frontArc(shake, 0, sunZ, 22), "base");
-    scene.polyline(frontArc(shake, 0, sunZ, 22), tone, { closed: true, bold: true });
-    for (let k = 0; k < 7; k++) {
-      const a = Math.PI * (0.1 + (k / 6) * 0.8);
-      const r0 = 28, r1 = 38;
-      scene.line([shake + r0 * Math.cos(a), 0, sunZ + r0 * Math.sin(a) * 0.9], [shake + r1 * Math.cos(a), 0, sunZ + r1 * Math.sin(a) * 0.9], R > 0.6 ? "muted" : "faint");
+    if (state === "error") r = 0.3;
+    const R = m.rise.to(r).value, K = m.cloud.to(state === "error" ? 1 : 0).value;
+    const sun = accentTone(ctx, "base");
+    const SX = -8, SY = -22, SR = 20, sz = lerp(0, 66, R);
+    scene.box(0, 0, 0, 132, 104, 4, "base");
+
+    // Water in front of the range, with the sun's reflection once it is up.
+    if (!empty) {
+      for (const [y, x0, x1] of [[18, -54, -26], [18, 30, 52], [28, -46, -14], [28, 22, 44], [38, -36, -16], [38, 30, 46]] as const) {
+        scene.line([x0, y, 4.05], [x1, y, 4.05], "faint");
+      }
+      const show = clamp((sz - 14) / 30, 0, 1);
+      if (show > 0.02) [[20, 11], [28, 8], [36, 5]].forEach(([y, h]) => {
+        scene.line([SX - h! * show, y!, 4.05], [SX + h! * show, y!, 4.05], sun === "base" ? "muted" : sun, { bold: true });
+      });
     }
-    if (state === "success") scene.check(44, -24, 4, "ok", ctx.fade());
-    if (state === "error") scene.cross(44, -24, 4, "err", ctx.fade());
+
+    // The sun, cut off at the plate, and its rays; the mountains in front hide what is still below the ridge.
+    const disc = frontArc(SX, SY, sz, SR, 0, TAU, 28).map(([x, y, z]) => [x, y, Math.max(4, z)] as Vec3);
+    if (empty) scene.polyline(disc, "ghost", { closed: true });
+    else {
+      const rays: Tone = sun === "base" ? (R > 0.6 ? "muted" : "faint") : sun;
+      for (let k = 0; k < 12; k++) {
+        const a = (k * TAU) / 12 + Math.PI / 12, z0 = sz + (SR + 5) * Math.sin(a), z1 = sz + (SR + 12) * Math.sin(a);
+        if (z0 > 6 && z1 > 6) scene.line([SX + (SR + 5) * Math.cos(a), SY, z0], [SX + (SR + 12) * Math.cos(a), SY, z1], rays);
+      }
+      scene.panel(disc, sun);
+    }
+
+    // A cloud drifts in over the sun on error.
+    if (K > 0.02) {
+      const cx = lerp(80, SX + 6, K), cz = 36;
+      const puffs: [number, number, number][] = [[-14, 0, 9], [0, 5, 12], [14, 0, 9]];
+      const top: Vec3[] = [];
+      for (let x = -23; x <= 23; x += 2) {
+        const z = Math.max(0, ...puffs.map(([px, pz, pr]) => Math.abs(x - px) < pr ? pz + Math.sqrt(pr * pr - (x - px) ** 2) : 0));
+        top.push([cx + x, SY + 6, cz + z]);
+      }
+      scene.panel([...top, [cx + 23, SY + 6, cz - 3], [cx - 23, SY + 6, cz - 3]], "base", Math.min(1, K * 1.5));
+    }
+
+    // The mountain range behind and the low hills in front, each a flat cut-out with depth.
+    const range: [number, number][] = [[-62, 4], [-32, 50], [-20, 38], [4, 14], [24, 34], [36, 42], [62, 4]];
+    const hill = (x0: number, x1: number, h: number): [number, number][] =>
+      Array.from({ length: 13 }, (_, i) => [lerp(x0, x1, i / 12), 4 + h * Math.sin((Math.PI * i) / 12) ** 0.8]);
+    const layers: [number, [number, number][]][] = [[-10, range], [4, hill(-64, -14, 16)], [4, hill(22, 64, 18)]];
+    for (const [y, pts] of layers) {
+      if (empty) {
+        scene.polyline(pts.map(([x, z]) => [x, y, z] as Vec3), "ghost", { closed: true });
+        continue;
+      }
+      scene.panel(pts.map(([x, z]) => [x, y - 3, z] as Vec3), "base");
+      scene.panel(pts.map(([x, z]) => [x, y, z] as Vec3), "base");
+    }
+    if (!empty) scene.polyline([[-38.5, -9.95, 40], [-35, -9.95, 36], [-31, -9.95, 41], [-26, -9.95, 36], [-22, -9.95, 40]], "muted");
   },
 });
 
@@ -440,21 +524,52 @@ export const sunrise = defineFigure({
 export const rest = defineFigure({
   name: "Rest",
   label: "A bed with a blanket pulled up",
-  offset: 6,
-  setup: ({ spring }) => ({ blanket: spring(0.4, 110, 16) }),
+  offset: 10,
+  setup: ({ spring }) => ({ blanket: spring(0.45, 110, 16), fall: spring(0, 90, 13), sleeper: spring(0, 120, 16) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    let b = 0.4;
-    if (state === "loading") b = 0.4 + 0.6 * smoothstep(ctx.loop(3));
+    const empty = state === "empty";
+    let b = 0.4 + ctx.hover * 0.15;
+    if (state === "loading") b = 0.4 + 0.6 * bump(ctx.loop(3));
     if (state === "success") b = 1;
-    const B = m.blanket.to(b).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 120, 70, 6, "base");
-    scene.box(-44 + shake, 0, 6, 60, 40, 8, "muted");
-    scene.box(-16 + shake, 0, 14, 46 + 22 * B, 42, 8 + 2 * B, tone);
-    if (state === "success") scene.check(44, -22, 6, "ok", ctx.fade());
-    if (state === "error") scene.cross(44, -22, 6, "err", ctx.fade());
+    if (state === "error") b = 0.7;
+    const B = m.blanket.to(b).value, F = clamp(m.fall.to(state === "error" ? 1 : 0).value, 0, 1.1);
+    const P = clamp(m.sleeper.to(state === "success" ? 1 : 0).value, 0, 1);
+    const body = bodyTone(ctx), cover: Tone = state === "loading" ? "hi" : ctx.verdict("base");
+    scene.box(0, 0, 0, 132, 124, 4, "base");
+
+    // Legs, frame, headboard and mattress; the bed runs along x with its head at the back.
+    const X0 = -50, X1 = 44, HW = 30, top = 26;
+    if (empty) {
+      scene.box(-3, 0, 4, X1 - X0, HW * 2, top - 4, "ghost");
+      scene.box(X0 - 3, 0, 4, 6, HW * 2 + 4, 52, "ghost");
+      return;
+    }
+    for (const [x, y] of [[X0 + 4, -HW + 4], [X1 - 4, -HW + 4], [X0 + 4, HW - 4], [X1 - 4, HW - 4]] as const) scene.box(x, y, 4, 5, 5, 6, body);
+    scene.box(X0 - 3, 0, 4, 6, HW * 2 + 4, 52, body);
+    scene.box(X0 - 3, 0, 56, 9, HW * 2 + 8, 4, body);
+    scene.box(-3, 0, 10, X1 - X0, HW * 2, 6, body);
+    scene.box(-3, 0, 16, X1 - X0 - 4, HW * 2 - 4, top - 16, body);
+    // The pillow, and the sleeper's head on it once tucked in.
+    scene.box(X0 + 13, 0, top, 16, 40, 6, body);
+    scene.line([X0 + 13, -16, top + 6.05], [X0 + 13, 16, top + 6.05], "faint");
+
+    // The blanket: turned down to a fold, pulled up while loading, slid off the side on error.
+    const xt = lerp(14, X0 + 24, clamp(B, 0, 1.05)), len = X1 - xt;
+    const by = lerp(0, HW + 15, F), bz = lerp(top, 4, F), bd = lerp(HW * 2 + 2, 26, F);
+    const cx = (xt + X1) / 2 + F * 6 + shake;
+    if (F < 0.5) {
+      scene.panel([[xt, HW + 1, top + 3], [X1, HW + 1, top + 3], [X1, HW + 1, 15], [xt, HW + 1, 15]].map(([x, y, z]) => [x!, y! + by, z! - (top - bz)] as Vec3), cover, 1 - F * 2);
+    }
+    scene.box(cx, by, bz, len, bd, 3, cover);
+    if (P > 0.05) scene.box(cx + 2, by, bz + 3, len - 14, 22, 4 * P, cover);
+    scene.box(xt + 5, by, bz + 3, 10, bd, 1.5, cover);
+    if (F > 0.3) scene.line([cx - len / 3, by - 4, bz + 3.05], [cx + len / 3, by + 6, bz + 3.05], "faint", { opacity: F });
+    if (P > 0.05) scene.panel(faceArc(X0 + 14, 0, top + 14, 8, 0, TAU, 20), cover, P);
+
+    // The footboard, low, at the near end.
+    scene.box(X1 + 3, 0, 4, 6, HW * 2 + 4, 30, body);
   },
 });
 
@@ -462,24 +577,60 @@ export const rest = defineFigure({
 export const badge = defineFigure({
   name: "Badge",
   label: "A medal with a ribbon",
-  offset: 4,
-  setup: ({ spring }) => ({ spin: spring(0) }),
+  offset: 10,
+  setup: ({ spring }) => ({ spin: spring(0), drop: spring(0, 90, 12) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake(), g = ctx.ground(0);
-    let s = 0;
-    if (state === "idle") s = clamp(g.x / 60, -0.5, 0.5) * ctx.hover;
-    if (state === "loading") s = Math.sin(ctx.time * 2.4) * 0.5;
-    if (state === "success") s = 0;
-    const S = m.spin.to(s).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 100, 90, 4, "base");
-    scene.polyline([[-14 + shake, -20, 10], [-22 + shake, -50, 6], [-8 + shake, -40, 6], [-2 + shake, -54, 10]] as Vec3[], "muted", { bold: true });
-    scene.polyline([[14 + shake, -20, 10], [22 + shake, -50, 6], [8 + shake, -40, 6], [2 + shake, -54, 10]] as Vec3[], "muted", { bold: true });
-    scene.cylinder(shake, 0, 4, 26 * (0.6 + 0.4 * Math.abs(Math.cos(S))), 8, tone);
-    scene.disc(shake, 0, 12.1, 16, "faint");
-    if (state === "success") scene.sparkle(44, -20, 22, 8, "ok", ctx.fade());
-    if (state === "error") scene.cross(0, -20, 14, "err", ctx.fade());
+    const empty = state === "empty";
+    let S = m.spin.to(state === "idle" ? clamp(g.x / 60, -0.6, 0.6) * ctx.hover : 0).value;
+    if (state === "loading") {
+      S = ctx.time * 3;
+      m.spin.set(S % TAU);
+    }
+    const Dp = clamp(m.drop.to(state === "error" ? 1 : 0).value, 0, 1);
+    const body = bodyTone(ctx), accent = accentTone(ctx, "base");
+    const MY = 0, MZ = 38, MR = 21, bar = 82;
+    scene.box(0, 0, 0, 112, 96, 4, "base");
+
+    // The display stand: a base, two posts and a crossbar.
+    const stand: Tone = empty ? "ghost" : "base";
+    scene.box(0, -6, 4, 76, 26, 5, stand);
+    for (const x of [-32, 32]) scene.box(x, -6, 9, 5, 5, bar - 9, stand);
+    scene.box(0, -6, bar, 70, 5, 5, stand);
+    if (empty) {
+      scene.polyline(frontArc(0, MY, MZ, MR, 0, TAU, 28), "ghost");
+      return;
+    }
+
+    // The fallen medal, on error, lies on the plate in front of the stand.
+    if (Dp > 0.02) {
+      const fx = 6 + shake, fy = 28;
+      scene.cylinder(fx, fy, 4, MR, 3, "err", Dp);
+      scene.panel(star(12).map(([a, b]) => [fx + a, fy - b, 7.1] as Vec3), "err", Dp);
+    }
+
+    // The ribbon: two striped straps meeting in a V at the medal's ring; on error they hang torn short.
+    const ringZ = MZ + MR + 3, end = lerp(ringZ, 58, Dp);
+    for (const side of [-1, 1]) {
+      const t = (z: number) => (bar - z) / (bar - ringZ);
+      const at = (x0: number, x1: number, z: number): Vec3 => [lerp(x0, x1, t(z)), MY - 2, z];
+      const strap: Vec3[] = [at(side * 25, side * -5, bar), at(side * 12, side * 5, bar), at(side * 12, side * 5, end), at(side * 25, side * -5, end)];
+      scene.panel(strap, "base");
+      scene.line(at(side * 18.5, 0, bar), at(side * 17, 0, end), "muted");
+    }
+    if (Dp >= 0.98) return;
+
+    // The medal: a thick disc that turns while loading, a rim, a raised star and a hanging ring.
+    const k = Math.cos(S), up = 1 - Dp, X = shake, cz = MZ - Dp * 20;
+    const disc = (y: number, r: number): Vec3[] => frontArc(0, y, cz, r, 0, TAU, 28).map(([x, yy, z]) => [X + x * k, yy, z] as Vec3);
+    scene.polyline(frontArc(X, MY, ringZ - 1, 3, 0, TAU, 10), "base", { opacity: up });
+    for (const y of [MY - 1.5, MY, MY + 1.5]) scene.panel(disc(y, MR), body, up);
+    if (Math.abs(k) > 0.25) {
+      const f = MY + 1.6;
+      scene.polyline(disc(f, MR - 4), state === "loading" ? "hi" : "muted", { closed: true, opacity: up });
+      scene.panel(star(12).map(([a, b]) => [X + a * k, f + 0.1, cz + b] as Vec3), accent, up);
+    }
   },
 });
 
@@ -487,20 +638,85 @@ export const badge = defineFigure({
 export const journal = defineFigure({
   name: "Journal",
   label: "A journal page with a heart",
-  offset: 4,
-  setup: ({ spring }) => ({ beat: spring(0, 180, 14) }),
+  offset: 14,
+  setup: ({ spring }) => ({ fold: spring(0, 110, 15), slip: spring(0, 90, 12), pen: spring(0, 120, 15) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const b = m.beat.to(state === "success" ? 1 : ctx.hover * 0.5).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 100, 120, 4, "base");
-    for (let k = 0; k < 5; k++) scene.line([-34 + shake, -36 + k * 12, 4.05], [30 - (k === 4 ? 16 : 0), -36 + k * 12, 4.05], "muted");
-    heart(scene, 6, 26, 4.05, 22 + 6 * b, tone);
-    if (state === "loading") {
-      const w = ctx.loop(2.4);
-      scene.line([-34 + shake, -48, 4.1], [-34 + shake + 64 * w, -48, 4.1], "hi", { bold: true });
+    const empty = state === "empty";
+    const fold = m.fold.to(state === "success" ? Math.PI : ctx.hover * 0.35).value;
+    const Sl = clamp(m.slip.to(state === "error" ? 1 : 0).value, 0, 1.1);
+    const Pn = m.pen.to(state === "loading" ? 1 : 0).value;
+    const body = bodyTone(ctx);
+    const th = lerp(0.95, 0.1, Sl), X0 = lerp(6, 34, Sl) + shake, Z0 = lerp(14, 6, Sl), Yc = 0, W = 34, HH = 46;
+    const c = Math.cos(th), s = Math.sin(th);
+    // A point on the book: u across (screen right), w up the page, n out of the page toward the viewer.
+    const P = (u: number, w: number, n = 0): Vec3 => {
+      let uu = u, nn = n;
+      if (u < 0) {
+        uu = u * Math.cos(fold) - n * Math.sin(fold);
+        nn = n * Math.cos(fold) - u * Math.sin(fold);
+      }
+      return [X0 - w * c + nn * s, Yc - uu, Z0 + w * s + nn * c];
+    };
+    const quad = (u0: number, u1: number, w0: number, w1: number, n: number) => [P(u0, w0, n), P(u1, w0, n), P(u1, w1, n), P(u0, w1, n)];
+    scene.box(0, 0, 0, 120, 112, 4, "base");
+
+    // The book stand: a base, a slanted back board and a ledge for the book to rest on.
+    const stand: Tone = empty ? "ghost" : "base";
+    scene.box(-10, 0, 4, 44, 80, 6, stand);
+    const B = (u: number, w: number): Vec3 => [6 - w * Math.cos(0.95) - 5 * Math.sin(0.95), -u, 14 + w * Math.sin(0.95) - 5 * Math.cos(0.95)];
+    scene.panel([B(-30, -6), B(30, -6), B(30, 40), B(-30, 40)], stand);
+    if (Sl < 0.5) scene.box(9, 0, 10, 5, 80, 5, stand);
+    if (empty) {
+      scene.polyline(quad(-W, W, 0, HH, 0), "ghost", { closed: true });
+      return;
     }
-    if (state === "error") scene.cross(6, 26, 4.1, "err", ctx.fade());
+
+    // The covers, the page block and the two pages.
+    scene.panel(quad(0, W + 2, -2, HH + 2, -3), body);
+    scene.panel(quad(0, W, 0, HH, 0), body);
+    for (const w of [16, 22, 28, 34, 40]) scene.line(P(5, w, 0.1), P(w === 16 ? 18 : W - 5, w, 0.1), "faint");
+    const hs = state === "success" ? 18 : 15;
+    scene.panel(heartUV(hs).map(([a, b]) => P(W / 2 + 1 + a, 29 + b, 0.15)), state === "loading" ? "base" : ctx.verdict("muted"));
+    // The ribbon bookmark down from the spine.
+    scene.polyline([P(1, HH, 0.2), P(4, 2, 0.2), P(6, -10, 0.2)], "muted", { bold: true });
+
+    // The left half: written lines, the line being written while loading; on success it folds shut over the right.
+    const back = fold > Math.PI / 2;
+    const left = () => {
+      scene.panel(quad(-W, 0, 0, HH, 0), body);
+      if (back) return;
+      const lines = [40, 34, 28, 22, 16];
+      lines.forEach((w, i) => {
+        const end = i === lines.length - 1 ? -16 : -5;
+        if (state === "loading" && i === lines.length - 1) {
+          const q = ctx.loop(2.4), x = lerp(-W + 5, end, q);
+          scene.line(P(-W + 5, w, 0.1), P(x, w, 0.1), "hi", { bold: true });
+          return;
+        }
+        scene.line(P(-W + 5, w, 0.1), P(end, w, 0.1), "muted");
+      });
+    };
+    const leftCover = () => {
+      scene.panel(quad(-W - 2, 0, -2, HH + 2, -3), body);
+      if (back) scene.panel(heartUV(16).map(([a, b]) => P(-W / 2 - 1 - a, 25 + b, -3.1)), body);
+    };
+    if (back) {
+      left();
+      leftCover();
+    } else {
+      leftCover();
+      left();
+    }
+
+    // The pen: on the plate at rest, lifted to the page to write while loading.
+    const q = state === "loading" ? ctx.loop(2.4) : 0;
+    const tip = P(lerp(-W + 5, -16, q), 16, 0.3), restTip: Vec3 = [30, 40, 5];
+    const T: Vec3 = [lerp(restTip[0], tip[0], Pn), lerp(restTip[1], tip[1], Pn), lerp(restTip[2], tip[2], Pn)];
+    const tail: Vec3 = [T[0] + lerp(26, 12, Pn), T[1] + lerp(-14, -10, Pn), T[2] + lerp(0, 22, Pn)];
+    const mid: Vec3 = [lerp(T[0], tail[0], 0.15), lerp(T[1], tail[1], 0.15), lerp(T[2], tail[2], 0.15)];
+    scene.line(T, mid, "muted", { bold: true });
+    scene.line(mid, tail, state === "loading" ? "hi" : "base", { bold: true });
   },
 });
