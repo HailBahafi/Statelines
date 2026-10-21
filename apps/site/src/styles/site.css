@@ -264,6 +264,7 @@ td code { white-space: nowrap; }
 @media (max-width: 640px) {
   .top-nav a:not(.active):not([href="/figures"]):not([href="/docs"]) { display: none; }
   .top-nav { gap: 0; }
+  .top-inner { gap: 14px; }
   .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .card { padding: 10px; }
   .card-use { font-size: 13px; }
@@ -282,6 +283,15 @@ td code { white-space: nowrap; }
 .filters { position: sticky; top: calc(var(--top) + 20px); max-height: calc(100vh - var(--top) - 40px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px; }
 .filter-title { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
 .filter-hint { font-size: 13px; line-height: 1.45; color: var(--muted); }
+.filter-title { display: flex; align-items: center; gap: 6px; position: relative; }
+.tip { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%;
+  border: 1px solid var(--line-2); font-size: 10px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); cursor: help; }
+.tip:hover, .tip:focus-visible { color: var(--ink); border-color: var(--muted); outline: none; }
+.tip::after { content: attr(data-tip); position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+  max-width: 260px; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--ink); color: var(--panel);
+  font-size: 12px; font-weight: 400; line-height: 1.45; letter-spacing: 0; text-transform: none; box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 20; }
+.tip:hover::after, .tip:focus-visible::after { opacity: 1; }
 .seg-col { display: flex; flex-direction: column; border-radius: var(--radius); }
 .seg-col button { text-align: left; border-radius: var(--radius-sm); }
 .chips-col { flex-direction: column; flex-wrap: nowrap; gap: 2px; padding-bottom: 0; }
@@ -307,3 +317,8 @@ td code { white-space: nowrap; }
   .showcase { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) { .showcase { grid-template-columns: 1fr; } }
+@media (max-width: 400px) {
+  .brand .version { display: none; }
+  .top-inner { gap: 8px; }
+  .top-nav a { padding-inline: 8px; }
+}
