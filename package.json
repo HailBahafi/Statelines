@@ -2,12 +2,22 @@
   "name": "statelines-monorepo",
   "private": true,
   "packageManager": "pnpm@9.15.9",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "pnpm --filter statelines-site dev",
     "build": "pnpm --filter statelines build && pnpm --filter statelines-site build",
     "typecheck": "pnpm --filter statelines typecheck && pnpm --filter statelines-site typecheck",
     "test": "pnpm --filter statelines test",
-    "generate": "python3 scripts/generate.py"
+    "generate": "python3 scripts/generate.py",
+    "changeset": "changeset",
+    "release": "pnpm --filter statelines build && changeset publish",
+    "format": "prettier --write \"**/*.{ts,json,md,yml}\" --ignore-path .gitignore",
+    "version-packages": "changeset version && pnpm install --lockfile-only"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "prettier": "3"
   }
 }

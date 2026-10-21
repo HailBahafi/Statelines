@@ -1,10 +1,14 @@
 import { defineConfig, type Plugin } from "vite";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "../..");
 const page = (name: string) => resolve(here, name);
+
+/** The library version, read from its package.json, so the site always shows what it documents. */
+const libraryVersion = JSON.parse(readFileSync(resolve(repo, "packages/statelines/package.json"), "utf8")).version as string;
 
 /**
  * Mirrors vercel.json in development: clean URLs and the figure route.
@@ -26,6 +30,7 @@ const routes: Plugin = {
 export default defineConfig({
   root: here,
   plugins: [routes],
+  define: { __STATELINES_VERSION__: JSON.stringify(libraryVersion) },
   // The library is built from source here, so the site always shows the code in this repository.
   resolve: { alias: { statelines: resolve(repo, "packages/statelines/src/index.ts") } },
   server: { fs: { allow: [repo] } },

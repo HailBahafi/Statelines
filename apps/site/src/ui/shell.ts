@@ -36,7 +36,7 @@ export function mountHeader(active: Section): void {
   theme.addEventListener("click", () => toggleTheme(theme));
   top.replaceChildren(h("header", { class: "top" },
     h("div", { class: "wrap top-inner" },
-      h("a", { class: "brand", href: "/" }, mark(), h("span", {}, "statelines")),
+      h("a", { class: "brand", href: "/" }, mark(), h("span", {}, "statelines"), h("span", { class: "version" }, `v${__STATELINES_VERSION__}`)),
       h("nav", { class: "top-nav", "aria-label": "Main" },
         link("figures", "/figures", "Figures"),
         link("docs", "/docs", "Docs"),
@@ -50,6 +50,6 @@ export function mountFooter(): void {
   if (!foot) return;
   foot.replaceChildren(h("footer", { class: "foot" },
     h("div", { class: "wrap foot-inner" },
-      h("span", {}, "statelines · MIT licensed · zero dependencies"),
+      h("span", {}, `statelines v${__STATELINES_VERSION__} · MIT licensed · zero dependencies`),
       h("span", {}, h("a", { href: "/docs" }, "Docs"), " · ", h("a", { href: "/figures" }, "Figures"), " · ", h("a", { href: "/llms.txt" }, "llms.txt")))));
 }

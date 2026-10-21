@@ -37,7 +37,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "tsup && cp ../../README.md ../../LICENSE ."
   },
   "peerDependencies": {
     "react": ">=18"
@@ -53,5 +54,17 @@
     "tsup": "^8.2.4",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR-ORG/statelines.git",
+    "directory": "packages/statelines"
+  },
+  "homepage": "https://statelines.vercel.app",
+  "bugs": {
+    "url": "https://github.com/YOUR-ORG/statelines/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

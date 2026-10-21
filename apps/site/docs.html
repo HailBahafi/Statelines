@@ -29,6 +29,7 @@
       <a href="#figures">Figures</a>
       <a href="#theme">Theme</a>
       <a href="#accessibility">Accessibility</a>
+      <a href="#versioning">Versioning</a>
       <h4>Extend</h4>
       <a href="#custom">Make your own</a>
       <a href="#rules">Design rules</a>
@@ -220,6 +221,23 @@ const html = `&lt;style&gt;${styles}&lt;/style&gt;` +
           <li>Colour is never the only signal: success adds a tick, and error adds a cross.</li>
           <li>Figures do not take focus. If a figure is interactive for your product, wrap it in a focusable element and describe the action in its label.</li>
         </ul>
+      </section>
+
+      <section id="versioning">
+        <h2>Versioning</h2>
+        <p>statelines follows <a href="https://semver.org" target="_blank" rel="noopener">semantic versioning</a>. The current release is <strong data-version></strong>.</p>
+        <div class="table-wrap" style="margin-top:16px">
+          <table>
+            <thead><tr><th>Bump</th><th>What changes</th><th>Your action</th></tr></thead>
+            <tbody>
+              <tr><td>Patch <code>0.3.x</code></td><td>Fixes. A figure's look and props stay the same.</td><td>Take it freely.</td></tr>
+              <tr><td>Minor <code>0.x.0</code></td><td>New figures and options, and visual refinements to existing figures.</td><td>Read the changelog before you upgrade.</td></tr>
+              <tr><td>Major <code>x.0.0</code></td><td>Removed or renamed figures or options.</td><td>Migrate, using the changelog.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:16px">Until 1.0.0, breaking changes ship in minor releases, and the changelog marks them. To take fixes only, pin the minor version: <span class="inline">"statelines": "~0.3.0"</span>. To take new figures as well, use <span class="inline">"^0.3.0"</span>.</p>
+        <div class="callout"><strong>Full history.</strong> Every release and its changes are in <a href="https://github.com/YOUR-ORG/statelines/blob/main/packages/statelines/CHANGELOG.md">CHANGELOG.md</a>.</div>
       </section>
 
       <section id="custom">

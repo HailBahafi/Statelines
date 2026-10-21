@@ -4,6 +4,7 @@ import { applyStoredTheme, mountFooter, mountHeader } from "../ui/shell";
 import { $, copy, h } from "../ui/dom";
 
 applyStoredTheme();
+document.querySelectorAll("[data-version]").forEach(el => { el.textContent = `v${__STATELINES_VERSION__}`; });
 mountHeader("docs");
 mountFooter();
 

@@ -22,6 +22,16 @@ pnpm build      # library and site
 
 The generated files are checked in CI. If `pnpm generate` changes anything, the build fails until you commit the result.
 
+## Versioning
+
+The library follows semantic versioning, managed with [Changesets](https://github.com/changesets/changesets). Every change a user would notice needs a changeset:
+
+```sh
+pnpm changeset
+```
+
+Choose patch, minor or major, and write one or two sentences. The pull request check fails if a library change has no changeset. When your pull request merges, the release workflow opens a "Version Packages" pull request. Merging that publishes the new version to npm.
+
 ## Code style
 
 - Strict TypeScript. No `any` in figures.

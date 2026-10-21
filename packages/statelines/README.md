@@ -208,6 +208,10 @@ The site has four pages:
 | `/figures/<name>` | One figure: every state, every option with live code, the props, and the code to use it. |
 | `/docs` | Install, usage, options, theme, accessibility, and how to make your own figure. |
 
+## Versioning and releases
+
+statelines follows semantic versioning. Each change to the library includes a changeset (`pnpm changeset`), which sets its bump and its changelog entry. Merging to `main` opens a release pull request, and merging that publishes to npm and creates a GitHub release. The full history is in [packages/statelines/CHANGELOG.md](packages/statelines/CHANGELOG.md).
+
 ## Deploy on Vercel
 
 The repository is ready for Vercel as it is:
