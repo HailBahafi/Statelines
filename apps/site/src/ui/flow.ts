@@ -2,9 +2,9 @@ import type { FigureInstance, FigureState } from "statelines";
 
 /** Loading runs slowly at rest, so a page of looping figures stays calm. */
 export const REST_SPEED = 0.55;
-const FAST_SPEED = 3;
-const FINISH_MS = 900;
-const HOLD_MS = 1500;
+const FAST_SPEED = 1;
+const FINISH_MS = 2200;
+const HOLD_MS = 2200;
 
 export interface Flow {
   /** The state the card shows when the pointer is away. */
