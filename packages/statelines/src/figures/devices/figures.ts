@@ -1,55 +1,215 @@
 import { defineFigure } from "../../core/define";
 import { bump, clamp, lerp, smoothstep } from "../../engine/math";
-import type { Tone, Vec3 } from "../../engine/scene";
+import type { Scene, Tone, Vec3 } from "../../engine/scene";
 import { facing, frontArc } from "../shapes";
 
-/** A phone that connects to a device. Use for pairing, bluetooth and device setup. */
+const TAU = Math.PI * 2;
+
+/** A rounded rectangle on the vertical plane y, centred on (cx, cz): clockwise from the top-right corner. */
+function rounded(cx: number, y: number, cz: number, a: number, b: number, r: number, steps = 4): Vec3[] {
+  const out: Vec3[] = [];
+  const corners: [number, number, number][] = [
+    [cx + a - r, cz + b - r, Math.PI / 2], [cx + a - r, cz - b + r, 0],
+    [cx - a + r, cz - b + r, -Math.PI / 2], [cx - a + r, cz + b - r, Math.PI],
+  ];
+  for (const [x, z, a0] of corners) for (let i = 0; i <= steps; i++) {
+    const t = a0 - (Math.PI / 2) * (i / steps);
+    out.push([x + r * Math.cos(t), y, z + r * Math.sin(t)]);
+  }
+  return out;
+}
+
+/** An upright slab with rounded corners whose face looks to the lower left. Returns the y of its face. */
+function slab(scene: Scene, cx: number, cy: number, cz: number, a: number, b: number, r: number, d: number, tone: Tone): number {
+  const face = cy + d / 2;
+  const front = rounded(cx, face, cz, a, b, r), back = rounded(cx, cy - d / 2, cz, a, b, r);
+  if (tone === "ghost") {
+    scene.panel(front, "ghost");
+    return face;
+  }
+  // The band that shows above and to the right of the face: the top-left corner round to the bottom-right one.
+  const idx = [15, 16, 17, 18, 19, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  scene.panel([...idx.map(i => back[i]!), ...idx.slice().reverse().map(i => front[i]!)], tone);
+  scene.panel(front, tone);
+  return face;
+}
+
+/** An oval on the vertical plane x, centred on (y, z): the face of a knob or ear cup that looks to the lower right. */
+const sideOval = (x: number, y: number, z: number, ry: number, rz: number, steps = 16): Vec3[] =>
+  Array.from({ length: steps + 1 }, (_, i) => {
+    const a = (i / steps) * TAU;
+    return [x, y + ry * Math.cos(a), z + rz * Math.sin(a)] as Vec3;
+  });
+
+/** Tips a point forward (toward y+) by `a` radians about the horizontal line through (py, pz). */
+const tip = (py: number, pz: number, a: number) => ([x, y, z]: Vec3): Vec3 => {
+  const dy = y - py, dz = z - pz, c = Math.cos(a), s = Math.sin(a);
+  return [x, py + dy * c + dz * s, pz - dy * s + dz * c];
+};
+
+/** The part of an upright cylinder's skin that faces the viewer, between two heights. */
+function skin(cx: number, cy: number, r: number, z0: number, z1: number, a0: number, a1: number, steps = 8): Vec3[] {
+  const ring = (z: number, from: number, to: number) => Array.from({ length: steps + 1 }, (_, i) => {
+    const a = from + ((to - from) * i) / steps;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a), z] as Vec3;
+  });
+  return [...ring(z0, a0, a1), ...ring(z1, a1, a0)];
+}
+
+/** A phone pairing with a pair of headphones. Use for pairing, bluetooth and device setup. */
 export const pair = defineFigure({
   name: "Pair",
-  label: "A phone connecting to a device",
-  offset: 6,
-  setup: ({ spring }) => ({ link: spring(0, 160, 18) }),
+  label: "A phone pairing with headphones",
+  offset: 12,
+  setup: ({ spring }) => ({ link: spring(0, 160, 18), knob: spring(0, 200, 18), fall: spring(0, 90, 11) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const link = m.link.to(state === "success" ? 1 : 0).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 140, 90, 4, "base");
-    scene.box(-40 + shake, 0, 4, 30, 50, 40, tone);
-    scene.rect(-48 + shake, -18, -32 + shake, 14, 44, "faint");
-    scene.box(40, 0, 4, 40, 40, 20, state === "empty" ? "ghost" : "muted");
-    if (state === "loading") for (let k = 0; k < 3; k++) {
-      const q = (ctx.loop(1.8) + k / 3) % 1;
-      scene.arc(-8, 0, 30, 10 + 28 * q, -0.8, 0.8, "hi", { opacity: 1 - q });
+    const empty = state === "empty";
+    const K = m.knob.to(state === "success" ? 1 : 0).value;
+    const L = clamp(m.link.to(state === "success" ? 1 : 0).value, 0, 1.2);
+    const F = m.fall.to(state === "error" ? 1.3 : ctx.hover * 0.12).value;
+    const verdict: Tone = state === "loading" ? "hi" : ctx.verdict("muted");
+    scene.box(0, 0, 0, 150, 104, 4, "base");
+
+    // The route between them runs along the floor.
+    const r0: Vec3 = [-12, 14, 4.05], r1: Vec3 = [8, -8, 4.05];
+    const along = (t: number): Vec3 => [lerp(r0[0], r1[0], t), lerp(r0[1], r1[1], t), 4.05];
+    if (!empty) {
+      if (state === "loading") {
+        scene.line(r0, r1, "faint");
+        for (let k = 0; k < 3; k++) {
+          const q = (ctx.loop(1.4) + k / 3) % 1;
+          scene.line(along(q * 0.85), along(q * 0.85 + 0.15), "hi", { bold: true });
+        }
+      } else if (state === "error") {
+        scene.line(r0, along(0.42), "err", { bold: true, opacity: ctx.fade() });
+        scene.line(along(0.58), r1, "faint");
+      } else if (L > 0.02) {
+        scene.line(r0, along(Math.min(1, L)), "ok", { bold: true });
+      }
     }
-    scene.line([-24, 0, 30 * link + 26], [24, 0, 26 + 2 * link], state === "success" ? "ok" : "faint", { bold: true });
-    if (state === "success") scene.check(0, -30, 4, "ok", ctx.fade());
-    if (state === "error") scene.cross(0, -30, 4, "err", ctx.fade());
+
+    // The phone, standing, its screen looking down-left.
+    const PX = -34, PY = 22, PZ = 39;
+    const face = slab(scene, PX, PY, PZ, 19, 35, 6, 8, empty ? "ghost" : "base");
+    const on = (u: number, z: number, d = 0.05): Vec3 => [PX + u, face + d, z];
+    if (!empty) {
+      scene.polyline(rounded(PX, face + 0.05, PZ, 15, 31, 4, 2), "faint", { closed: true });
+      scene.line(on(-4, 70), on(4, 70), "muted");
+      // A headphone glyph above the device row.
+      scene.polyline(frontArc(PX, face + 0.1, 50, 7, 0, Math.PI, 10), "muted", { bold: true });
+      scene.polyline([on(-8, 50), on(-8, 43), on(-5, 43), on(-5, 50)], "muted", { closed: true });
+      scene.polyline([on(5, 50), on(5, 43), on(8, 43), on(8, 50)], "muted", { closed: true });
+      if (state === "loading") {
+        const a = -ctx.time * 5;
+        scene.polyline(frontArc(PX, face + 0.15, 47, 12, a, a + 2.2, 12), "hi", { bold: true });
+      }
+      // The device row with its toggle.
+      const row: Tone = state === "loading" ? "base" : ctx.verdict();
+      const rx = PX + (state === "error" ? shake * 0.5 : 0);
+      scene.box(rx, face + 1.5, 18, 28, 3, 12, row);
+      const rf = face + 3.05;
+      scene.line([rx - 11, rf, 26], [rx - 2, rf, 26], "muted");
+      scene.line([rx - 11, rf, 22], [rx - 5, rf, 22], "faint");
+      scene.polyline([[rx + 1, rf, 21], [rx + 12, rf, 21], [rx + 12, rf, 27], [rx + 1, rf, 27]], K > 0.5 ? "ok" : "faint", { closed: true });
+      scene.box(rx + 3.5 + K * 6, rf + 1, 21.5, 4, 2, 5, K > 0.5 ? "ok" : state === "loading" ? "hi" : "muted");
+    }
+
+    // The headphones: two ear cups on a headband; they tip over onto the plate on error.
+    const hx = 30 + shake, hy = -24, cz = 16;
+    const T = tip(hy + 9, 4, F);
+    const tone: Tone = empty ? "ghost" : state === "loading" ? "base" : ctx.verdict();
+    const cup = (x: number, ry: number, rz: number, t: Tone) => scene.panel(sideOval(x, hy, cz, ry, rz).map(T), t);
+    const band = (y: number) => {
+      const outer = Array.from({ length: 13 }, (_, i) => T([hx + 26 * Math.cos((i / 12) * Math.PI), y, 25 + 33 * Math.sin((i / 12) * Math.PI)]));
+      const inner = Array.from({ length: 13 }, (_, i) => T([hx + 22 * Math.cos(((12 - i) / 12) * Math.PI), y, 25 + 29 * Math.sin(((12 - i) / 12) * Math.PI)]));
+      scene.panel([...outer, ...inner], tone);
+    };
+    cup(hx - 27, 8, 11, tone);
+    cup(hx - 24, 9, 12, tone);
+    if (!empty) {
+      cup(hx - 20, 8, 11, "muted");
+      scene.polyline(sideOval(hx - 19.9, hy, cz, 4.5, 6.5, 12).map(T), "faint");
+    }
+    band(hy - 3);
+    band(hy + 3);
+    if (!empty) cup(hx + 20, 8, 11, "muted");
+    cup(hx + 23, 9, 12, tone);
+    cup(hx + 26, 8.5, 11.5, tone);
+    if (!empty) {
+      scene.polyline(sideOval(hx + 26.05, hy, cz, 5, 7, 14).map(T), "muted");
+      scene.polyline(sideOval(hx + 26.1, hy + 5, cz - 7, 1.1, 1.1, 6).map(T), state === "idle" ? "faint" : verdict, { bold: state !== "idle" });
+    }
   },
 });
 
-/** A battery that fills and charges. Use for battery status, charging and power. */
+/** A battery charging in its cradle. Use for battery status, charging and power. */
 export const battery = defineFigure({
   name: "Battery",
-  label: "A battery filling up",
-  offset: 6,
-  setup: ({ spring }) => ({ level: spring(0.35, 120, 18) }),
+  label: "A battery filling up in its charger",
+  offset: 14,
+  setup: ({ spring }) => ({ level: spring(0.35, 120, 18), lift: spring(0, 130, 13) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
+    const empty = state === "empty";
     let level = 0.35;
     if (state === "loading") level = ctx.progress(3);
     if (state === "success") level = 1;
     if (state === "error") level = 0.08;
     if (state === "empty") level = 0;
-    const L = m.level.to(level).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : "base";
-    scene.box(0, 0, 0, 120, 60, 4, "base");
-    scene.box(-42 + shake, 0, 4, 96, 36, 36, tone === "base" ? "base" : tone);
-    scene.box(-42 + 96 - 2, 0, 4, 6, 14, 14, "muted");
-    if (L > 0.02) scene.box(-40 + shake, 0, 6, 90 * L, 30, 26, tone === "base" ? "muted" : tone);
-    if (state === "success") scene.check(0, -28, 4, "ok", ctx.fade());
-    if (state === "error") scene.cross(0, -28, 4, "err", ctx.fade());
+    const L = clamp(m.level.to(level).value, 0, 1);
+    const up = m.lift.to(state === "error" ? 15 : ctx.hover * 4).value;
+    const tone: Tone = state === "loading" ? "hi" : ctx.verdict("muted");
+    const cr: Tone = empty ? "ghost" : "base";
+    scene.box(0, 0, 0, 140, 100, 4, "base");
+
+    // The mains plug and its lead into the back of the cradle.
+    if (!empty) scene.polyline([[-31, 12, 8], [-42, 12, 5], [-50, 20, 5], [-50, 28, 6]], "muted", { bold: true });
+    scene.box(-50, 34, 4, 12, 14, 9, cr);
+
+    // The cradle, with a socket for the cell.
+    const BX = -9, BY = -4;
+    scene.box(0, 0, 4, 60, 44, 16, cr);
+    if (!empty) scene.disc(BX, BY, 20.05, 17.5, "muted");
+
+    // The cell: body, wrapper band and the positive nub, with a level window on its skin.
+    const bx = BX + shake, z0 = 6 + up, body: Tone = empty ? "ghost" : state === "loading" ? "base" : ctx.verdict();
+    scene.cylinder(bx, BY, z0, 15, 46, body);
+    scene.cylinder(bx, BY, z0 + 46, 15, 16, body);
+    scene.cylinder(bx, BY, z0 + 62, 5, 4, body);
+    if (!empty) {
+      scene.arc(bx, BY, z0 + 49, 15.05, -Math.PI / 4, (3 * Math.PI) / 4, "faint");
+      const w0 = z0 + 18, w1 = z0 + 42, a0 = Math.PI / 4 - 0.95, a1 = Math.PI / 4 + 0.95;
+      scene.polyline(skin(bx, BY, 15.05, w0, w1, a0, a1), "faint", { closed: true });
+      if (L > 0.03) {
+        const top = w0 + (w1 - w0) * L;
+        scene.panel(skin(bx, BY, 15.1, w0, top, a0, a1), tone);
+        for (let k = 1; k < 4; k++) if (w0 + k * 6 < top - 1) scene.arc(bx, BY, w0 + k * 6, 15.15, a0, a1, tone);
+        scene.arc(bx, BY, top, 15.15, a0, a1, tone, { bold: true });
+      }
+    }
+
+    // The cradle's top in front of the cell, its front and its end hide the seated part.
+    const rim: Vec3[] = [];
+    for (let i = 0; i <= 12; i++) {
+      const a = -Math.PI / 4 + (i / 12) * Math.PI;
+      rim.push([BX + 17.5 * Math.cos(a), BY + 17.5 * Math.sin(a), 20]);
+    }
+    if (!empty) {
+      const y1 = BY + 17.5 * Math.sin(-Math.PI / 4);
+      scene.panel([...rim, [-30, rim[12]![1], 20], [-30, 22, 20], [30, 22, 20], [30, y1, 20]], "base");
+      scene.panel([[-30, 22, 4], [30, 22, 4], [30, 22, 20], [-30, 22, 20]], "base");
+      scene.panel([[30, -22, 4], [30, 22, 4], [30, 22, 20], [30, -22, 20]], "base");
+      scene.polyline(rim, "muted");
+      // Four charge lights on the cradle.
+      const lit = state === "error" ? 1 : Math.ceil(L * 4 - 0.02);
+      for (let k = 0; k < 4; k++) {
+        const on = k < lit;
+        scene.disc(10 + k * 6, 14, 20.05, 2.3, on ? tone : "faint", { fill: on });
+      }
+    }
   },
 });
 
@@ -57,46 +217,107 @@ export const battery = defineFigure({
 export const speaker = defineFigure({
   name: "Speaker",
   label: "A smart speaker sending sound waves",
-  offset: 0,
-  setup: () => ({}),
-  draw(ctx) {
-    const { scene, state } = ctx;
-    const shake = ctx.shake();
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 80, 80, 4, "base");
-    scene.cylinder(shake, 0, 4, 28, 60, tone);
-    scene.disc(shake, 0, 64, 14, "muted", { plate: true });
-    if (state === "loading") for (let k = 0; k < 3; k++) {
-      const q = (ctx.loop(1.5) + k / 3) % 1;
-      scene.arc(0, 0, 66, 14 + 46 * q, -0.9, 0.9, "hi", { opacity: 1 - q });
-    }
-    if (state === "success") scene.check(0, -44, 64, "ok", ctx.fade());
-    if (state === "error") scene.cross(0, -44, 64, "err", ctx.fade());
-  },
-});
-
-/** A watch face with a heart and steps ring. Use for wearables, activity and fitness. */
-export const watch = defineFigure({
-  name: "Watch",
-  label: "A smartwatch face with a progress ring",
-  offset: 4,
-  setup: ({ spring }) => ({ ring: spring(0.6, 110, 16) }),
+  offset: 10,
+  setup: ({ spring }) => ({ plug: spring(0, 110, 13), press: spring(0, 200, 18) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
+    const empty = state === "empty";
+    const U = m.plug.to(state === "error" ? 1 : 0).value;
+    const press = m.press.to(ctx.hover).value;
+    const body: Tone = empty ? "ghost" : state === "loading" ? "base" : ctx.verdict();
+    const X = 6 + shake, Y = -8, R = 26, top = 68;
+    scene.box(0, 0, 0, 124, 104, 4, "base");
+
+    // The wall socket and the lead to the speaker.
+    scene.box(-50, 30, 4, 8, 18, 24, empty ? "ghost" : "base");
+    const plug: Vec3 = [-41 + 11 * U, 30 + 5 * U, 12 - 8 * U];
+    if (!empty) {
+      scene.polyline([[plug[0] + 4, plug[1], plug[2] + 2], [-22, 26, 4.5], [X - 18, Y + 18, 4.5]], "muted", { bold: true });
+      scene.box(plug[0], plug[1], plug[2], 8, 8, 6, state === "error" ? "err" : "base");
+    }
+
+    // Ripples across the plate while it plays.
+    if (state === "loading") for (let k = 0; k < 3; k++) {
+      const q = (ctx.loop(1.6) + k / 3) % 1;
+      scene.arc(X, Y, 4.05, R + 6 + 20 * q, -Math.PI / 4, (3 * Math.PI) / 4, "hi", { opacity: 1 - q });
+    }
+    if (state === "success") for (let k = 0; k < 2; k++) {
+      scene.arc(X, Y, 4.05, R + 8 + k * 9, -Math.PI / 4, (3 * Math.PI) / 4, "ok", { opacity: ctx.fade() * (1 - k * 0.35) });
+    }
+
+    // The speaker: a foot, a fabric-covered body and a top with a light ring and buttons.
+    scene.cylinder(X, Y, 4, R - 1, 5, body);
+    scene.cylinder(X, Y, 9, R, top - 9, body);
+    if (empty) return;
+    for (let z = 18; z < top - 4; z += 8) scene.arc(X, Y, z, R + 0.05, -Math.PI / 4, (3 * Math.PI) / 4, "faint");
+    scene.arc(X, Y, 12, R + 0.05, -Math.PI / 4, (3 * Math.PI) / 4, "muted");
+    const t = top + 0.05;
+    scene.disc(X, Y, t, R - 3, "faint");
+    if (state === "loading") {
+      const a = ctx.time * 4;
+      scene.arc(X, Y, t, R - 3, a, a + 1.3, "hi", { bold: true });
+      scene.arc(X, Y, t, R - 3, a + Math.PI, a + Math.PI + 1.3, "hi", { bold: true });
+    } else if (state === "success") scene.arc(X, Y, t, R - 3, 0, TAU, "ok", { bold: true });
+    else if (state === "error") scene.arc(X, Y, t, R - 3, 0.2, 1.6, "err", { bold: true, opacity: ctx.fade() });
+    // Volume, mute and action buttons.
+    for (const a of [-2.4, -1.2, 0]) scene.disc(X + 12 * Math.cos(a), Y + 12 * Math.sin(a), t, 2.4, "muted");
+    scene.cylinder(X - 3, Y + 3, top, 4.5, 2 - press * 1.5, "base");
+  },
+});
+
+/** A smartwatch with activity rings closing. Use for wearables, activity and fitness. */
+export const watch = defineFigure({
+  name: "Watch",
+  label: "A smartwatch with activity rings",
+  offset: 16,
+  setup: ({ spring }) => ({ ring: spring(0.6, 110, 16), crown: spring(0, 180, 16) }),
+  draw(ctx, m) {
+    const { scene, state } = ctx;
+    const shake = ctx.shake();
+    const empty = state === "empty";
     let ring = 0.6;
     if (state === "loading") ring = ctx.progress(3);
     if (state === "success") ring = 1;
-    if (state === "error") ring = 0.2;
-    const R = m.ring.to(ring).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 100, 100, 4, "base");
-    scene.cylinder(shake, 0, 4, 34, 14, tone === "base" ? "base" : tone);
-    scene.disc(shake, 0, 18.1, 26, "faint");
-    scene.arc(shake, 0, 18.2, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * R, tone, { bold: true });
-    scene.box(shake, -50, 4, 24, 12, 4, "muted");
-    if (state === "success") scene.check(0, 56, 4, "ok", ctx.fade());
-    if (state === "error") scene.cross(0, 56, 4, "err", ctx.fade());
+    if (state === "error") ring = 0.12;
+    if (empty) ring = 0;
+    const R = clamp(m.ring.to(ring).value, 0, 1);
+    const C = m.crown.to(ctx.hover * 2.5).value;
+    const tone: Tone = empty ? "ghost" : state === "loading" ? "base" : ctx.verdict();
+    scene.box(0, 0, 0, 110, 100, 4, "base");
+
+    // The strap loops round behind the case, as on a display stand.
+    const sc = -12, sz = 36, SR = 32, X = shake;
+    const at = (p: number): [number, number] => [sc + SR * Math.cos(p), sz + SR * Math.sin(p)];
+    const run = (from: number, to: number, n: number) => Array.from({ length: n + 1 }, (_, i) => at(from + ((to - from) * i) / n));
+    const ribbon = (pts: [number, number][]) => scene.panel([
+      ...pts.map(([y, z]) => [X - 13, y, z] as Vec3), ...pts.slice().reverse().map(([y, z]) => [X + 13, y, z] as Vec3),
+    ], empty ? "ghost" : "base");
+    // Split where the strap turns edge-on, so each run is a clean band: the back and underside first, then over the top.
+    ribbon(run((3 * Math.PI) / 4, TAU - Math.PI / 4, 12));
+    ribbon([[20, 60], ...run(0.7, (3 * Math.PI) / 4, 8)]);
+    ribbon([...run(TAU - Math.PI / 4, TAU - 0.6, 2), [20, 14]]);
+    if (!empty) for (let k = 0; k < 4; k++) {
+      const [y, z] = at(1.25 + k * 0.17);
+      scene.line([X - 1.5, y, z], [X + 1.5, y, z], "muted", { bold: true });
+    }
+
+    // The case with its screen, crown and side button.
+    const face = slab(scene, X, 25, 38, 25, 30, 9, 10, tone);
+    if (empty) return;
+    scene.polyline(rounded(X, face + 0.05, 38, 21, 26, 6, 3), "faint", { closed: true });
+    const rest: Tone = state === "loading" || state === "idle" ? "muted" : state === "error" ? "faint" : "ok";
+    const rings: [number, number, Tone][] = [
+      [16, R, state === "loading" ? "hi" : ctx.verdict()],
+      [12, R * 0.85, rest],
+      [8, Math.min(1, R * 1.1), rest],
+    ];
+    for (const [r, v, t] of rings) {
+      scene.polyline(frontArc(X, face + 0.1, 38, r, 0, TAU, 24), "faint");
+      if (v > 0.02) scene.polyline(frontArc(X, face + 0.15, 38, r, Math.PI / 2, Math.PI / 2 - TAU * Math.min(v, 1), Math.max(4, Math.ceil(24 * v))), t, { bold: true });
+    }
+    for (let k = 0; k < 3; k++) scene.panel(sideOval(X + 25 + k * 1.3 + C * (k / 2), 25, 50, 4, 4, 12), "base");
+    scene.box(X + 25.8, 25, 25, 1.6, 6, 11, "base");
   },
 });
 
@@ -168,25 +389,68 @@ export const camera = defineFigure({
   },
 });
 
-/** A microphone with sound rising from it. Use for voice recording, transcription and audio input. */
+/** A microphone on a desk stand feeding a level meter. Use for voice recording, transcription and audio input. */
 export const mic = defineFigure({
   name: "Mic",
   label: "A microphone picking up sound",
-  offset: 4,
-  setup: ({ spring }) => ({ level: spring(0.2, 140, 16) }),
+  offset: 20,
+  setup: ({ spring }) => ({ level: spring(0.3, 140, 16), drop: spring(0, 120, 12), gain: spring(0, 160, 18) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const lvl = state === "loading" ? 0.3 + 0.7 * Math.abs(Math.sin(ctx.time * 6)) : state === "empty" ? 0 : 0.25;
-    const L = m.level.to(lvl).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 100, 70, 4, "base");
-    scene.cylinder(-10 + shake, 0, 4, 12, 30, tone);
-    scene.arc(-10 + shake, 0, 34, 16, 0, Math.PI, "muted");
-    scene.line([-10 + shake, 0, 34], [-10 + shake, 0, 14], "muted", { bold: true });
-    for (let k = 1; k <= 3; k++) scene.arc(-10, 0, 14, 18 + k * 12 * (0.5 + L), -0.6, 0.6, tone === "base" ? "muted" : tone, { opacity: 1 - k * 0.22 });
-    if (state === "success") scene.check(40, -22, 4, "ok", ctx.fade());
-    if (state === "error") scene.cross(40, -22, 4, "err", ctx.fade());
+    const empty = state === "empty";
+    let lvl = 0.3;
+    if (state === "loading") lvl = 0.3 + 0.7 * Math.abs(Math.sin(ctx.time * 5) * Math.sin(ctx.time * 1.7 + 1));
+    if (state === "success") lvl = 0.84;
+    if (state === "error") lvl = 0.17;
+    if (empty) lvl = 0;
+    const Lv = clamp(m.level.to(lvl).value, 0, 1);
+    const D = m.drop.to(state === "error" ? 17 : 0).value;
+    const G = m.gain.to(ctx.hover).value;
+    const body: Tone = empty ? "ghost" : state === "loading" ? "base" : ctx.verdict();
+    const accent: Tone = state === "loading" ? "hi" : ctx.verdict("muted");
+    scene.box(0, 0, 0, 132, 100, 4, "base");
+
+    // The lead from the interface to the stand.
+    if (!empty) scene.polyline([[12, 14, 7], [2, 14, 4.5], [-6, 4, 4.5], [-12, -2, 4.5]], "muted", { bold: true });
+
+    // The stand: a round foot and a pole.
+    const MX = -18 + shake, MY = -8, mz = 46 - D;
+    scene.cylinder(MX, MY, 4, 18, 4, empty ? "ghost" : "base");
+    scene.cylinder(MX, MY, 8, 2.5, 30, empty ? "ghost" : "base");
+
+    // The yoke holds the microphone by two pivots.
+    const yoke = [...frontArc(MX, MY, mz + 6, 16, Math.PI, TAU, 12)];
+    if (!empty) {
+      scene.polyline([[MX - 16, MY, mz + 16], ...yoke, [MX + 16, MY, mz + 16]], "muted", { bold: true });
+      scene.panel(sideOval(MX - 15, MY, mz + 15, 3, 3, 10), "base");
+    }
+    // Body, collar, the grille head and its cap.
+    scene.cylinder(MX, MY, mz, 11, 22, body);
+    scene.cylinder(MX, MY, mz + 22, 13, 3, body);
+    scene.cylinder(MX, MY, mz + 25, 13, 26, body);
+    scene.cylinder(MX, MY, mz + 51, 10, 3, body);
+    if (empty) return;
+    for (let z = mz + 30; z < mz + 50; z += 4.5) scene.arc(MX, MY, z, 13.05, -Math.PI / 4, (3 * Math.PI) / 4, "faint");
+    for (const a of [0, Math.PI / 4, Math.PI / 2]) scene.line([MX + 13.05 * Math.cos(a), MY + 13.05 * Math.sin(a), mz + 26], [MX + 13.05 * Math.cos(a), MY + 13.05 * Math.sin(a), mz + 50], "faint");
+    scene.arc(MX, MY, mz + 14, 11.05, -Math.PI / 4, (3 * Math.PI) / 4, accent === "muted" ? "faint" : accent, { bold: accent !== "muted" });
+    scene.panel(sideOval(MX + 15, MY, mz + 15, 3, 3, 10), "base");
+
+    // The audio interface: a gain knob on top and a level meter on its face.
+    const IX = 34, IY = 18;
+    scene.box(IX, IY, 4, 46, 28, 14, "base");
+    scene.cylinder(IX + 13, IY - 4, 18, 6, 4, "base");
+    const g = -0.6 + G * 1.4;
+    scene.line([IX + 13, IY - 4, 22.05], [IX + 13 + 5 * Math.cos(g), IY - 4 + 5 * Math.sin(g), 22.05], "muted");
+    scene.disc(IX - 6, IY - 6, 18.05, 3, "muted");
+    const lit = Math.round(Lv * 6), front = IY + 14;
+    for (let k = 0; k < 6; k++) {
+      const x = IX - 17 + k * 5.4;
+      if (k < lit) scene.box(x, front + 0.8, 8, 3.8, 1.6, 6, state === "error" ? "err" : accent === "muted" ? "base" : accent);
+      else scene.rect(x - 1.9, front + 0.05, x + 1.9, front + 0.05, 8, "faint");
+      if (k >= lit) scene.line([x - 1.9, front + 0.05, 8], [x - 1.9, front + 0.05, 14], "faint");
+    }
+    scene.polyline(frontArc(IX + 15, front + 0.05, 11, 3, 0, TAU, 10), "muted");
   },
 });
 
@@ -194,25 +458,69 @@ export const mic = defineFigure({
 export const printer = defineFigure({
   name: "Printer",
   label: "A printer with a page sliding out",
-  offset: 6,
-  setup: ({ spring }) => ({ page: spring(0, 150, 16) }),
+  offset: 20,
+  setup: ({ spring }) => ({ page: spring(0, 150, 16), fan: spring(0, 160, 16) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
+    const empty = state === "empty";
     let out = 0;
     if (state === "loading") out = ctx.progress(2.4);
     if (state === "success") out = 1;
-    if (state === "error") out = 0.25;
-    const P = m.page.to(out).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 120, 70, 22, "base");
-    scene.box(0 + shake, 0, 22, 86, 30, 4, tone);
-    scene.box(0, 26 + 28 * P, 22, 66, 40 * P + 1, 1, "faint");
-    scene.line([-30, 40, 22.05], [30 * P, 40, 22.05], "muted");
-    if (state === "success") scene.check(44, -26, 22, "ok", ctx.fade());
-    if (state === "error") scene.cross(44, -26, 22, "err", ctx.fade());
+    if (state === "error") out = 0.3;
+    const P = clamp(m.page.to(out).value, 0, 1.05);
+    const fan = m.fan.to(ctx.hover).value;
+    const body: Tone = empty ? "ghost" : state === "loading" ? "base" : ctx.verdict();
+    const paper: Tone = state === "loading" ? "hi" : ctx.verdict("base");
+    scene.box(0, 0, 0, 140, 104, 4, "base");
+
+    // Paper waiting in the feed at the back.
+    if (!empty) for (let k = 0; k < 2; k++) {
+      const lean = 14 + k * 3 + fan * 3 * k;
+      scene.panel([[-30, -27 + k * 2, 40], [30, -27 + k * 2, 40], [30, -27 + k * 2 - lean, 74 - k * 2], [-30, -27 + k * 2 - lean, 74 - k * 2]], "base");
+    }
+
+    // The body, its lid seam and the control panel.
+    const X = shake;
+    scene.box(X, -10, 4, 100, 50, 36, body);
+    if (empty) {
+      scene.box(0, 31, 14, 72, 32, 2, "ghost");
+      return;
+    }
+    scene.line([X - 50, -22, 40.05], [X + 50, -22, 40.05], "faint");
+    scene.rect(X + 18, 1, X + 42, 11, 40.05, "muted");
+    scene.disc(X + 10, 6, 40.05, 2.4, "muted");
+    const led: Tone = state === "loading" ? "hi" : ctx.verdict("faint");
+    scene.disc(X + 10, -6, 40.05, 2.2, led, { fill: led !== "faint" });
+    // The output slot on the face and the tray under it.
+    const F = 15.05;
+    scene.polyline([[X - 36, F, 20], [X + 36, F, 20], [X + 36, F, 24], [X - 36, F, 24]], "muted", { closed: true });
+    scene.box(X, 31, 14, 72, 32, 2, "base");
+
+    if (state === "error") {
+      // A jam: the page buckles into folds as it leaves the slot.
+      const folds: [number, number][] = [[F, 21], [20, 31], [25, 22], [30, 30], [35, 21], [39, 27]];
+      for (let i = 0; i < folds.length - 1; i++) {
+        const [y0, z0] = folds[i]!, [y1, z1] = folds[i + 1]!, w = 30 - i;
+        scene.panel([[X - w, y0, z0], [X + w, y0, z0], [X + w, y1, z1], [X - w, y1, z1]], "err", ctx.fade(0.2));
+      }
+      return;
+    }
+    // The page slides out onto the tray, printed lines appearing as it comes.
+    if (P > 0.02) {
+      const lead = F + 40 * Math.min(1, P), z = 16;
+      scene.box(X, (F + lead) / 2, z, 60, lead - F, 1.2, paper);
+      const top = z + 1.25;
+      for (let j = 0; j < 5; j++) {
+        const y = lead - 6 - j * 6.5;
+        if (y < F + 2) break;
+        if (j === 0) scene.rect(X - 22, y - 3, X - 6, y + 2, top, paper === "base" ? "muted" : paper);
+        else scene.line([X - 22, y, top], [X + (j === 4 ? 4 : 22), y, top], paper === "base" ? "muted" : paper);
+      }
+    }
   },
 });
+
 
 /** A server rack: blades that light up one at a time. Use for hosting, deploy health and infrastructure. `count`: blades, 3–8. */
 export const rack = defineFigure({
@@ -232,8 +540,6 @@ export const rack = defineFigure({
       scene.box(shake * (state === "error" && k === 0 ? 1 : 0), 0, z, 60, 60, h * 0.7, state === "empty" ? "ghost" : tone);
       scene.disc(28, -22, z + h * 0.7 + 0.05, 2, lit ? "hi" : "faint", { fill: true });
     }
-    if (state === "success") scene.check(0, 46, 4, "ok", ctx.fade());
-    if (state === "error") scene.cross(0, 46, 4, "err", ctx.fade());
   },
 });
 
@@ -265,8 +571,6 @@ export const satellite = defineFigure({
       const q = (ctx.loop(1.6) + k / 3) % 1;
       scene.arc(40, -24, 4, 6 + 22 * q, -0.9, 0.9, "hi", { opacity: 1 - q });
     }
-    if (state === "success") scene.check(40, -24, 4, "ok", ctx.fade());
-    if (state === "error") scene.cross(40, -24, 4, "err", ctx.fade());
   },
 });
 
@@ -286,8 +590,6 @@ export const sync = defineFigure({
     scene.arc(shake, 0, 6, 30, T, T + Math.PI * 1.2, tone, { bold: true });
     scene.arc(shake, 0, 6, 30, T + Math.PI, T + Math.PI * 2.2, tone, { bold: true });
     scene.cylinder(shake, 0, 4, 10, 10, tone);
-    if (state === "success") scene.check(0, 0, 18, "ok", ctx.fade());
-    if (state === "error") scene.cross(0, 0, 18, "err", ctx.fade());
   },
 });
 
@@ -311,8 +613,6 @@ export const chip = defineFigure({
     for (let k = 0; k < 6; k++) scene.box(-50 + k * 8, -50, 4, 3, 10, 3, "muted");
     scene.box(0 + shake, 0, Z, 40, 40, 6, tone);
     for (let k = 0; k < 6; k++) scene.line([-22, -10 + k * 4, Z + 6.05], [-20 + k * 4, -10 + k * 4, Z + 6.05], "muted");
-    if (state === "success") scene.check(42, 34, 4, "ok", ctx.fade());
-    if (state === "error") scene.cross(42, 34, 4, "err", ctx.fade());
   },
 });
 
@@ -332,7 +632,5 @@ export const cursor = defineFigure({
     scene.box(0 + shake, 0, 4 - P * 2, 70, 30, 8 - P * 3, state === "idle" ? "muted" : tone);
     const tip: Vec3[] = [[30, -28, 4], [30, 0, 4], [36, -5, 4], [42, 6, 4], [48, 2, 4], [42, -6, 4], [48, -10, 4]];
     scene.polyline(tip.map(([x, y, z]) => [x - 20 + P * 4, y + 10, z + 12] as Vec3), tone, { closed: true });
-    if (state === "success") scene.check(42, 30, 4, "ok", ctx.fade());
-    if (state === "error") scene.cross(42, 30, 4, "err", ctx.fade());
   },
 });
