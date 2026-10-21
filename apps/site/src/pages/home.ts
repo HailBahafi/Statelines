@@ -10,7 +10,7 @@ mountHeader("home");
 mountFooter();
 
 // The best figures, big, in loading; hovering a card plays it through to success and error.
-const FEATURED = ["Upload", "Send", "Chat", "Pay", "Shipping", "SignIn"];
+const FEATURED = ["Discover", "Pay", "Search", "Key", "Boarding", "Connect"];
 $("#showcase").replaceChildren(...FEATURED.flatMap(name => {
   const entry = findEntry(name);
   if (!entry) return [];
