@@ -210,24 +210,75 @@ export const handshake = defineFigure({
 export const radar = defineFigure({
   name: "Radar",
   label: "A radar sweep finding a threat",
-  offset: 6,
-  setup: ({ spring }) => ({ blip: spring(0, 120, 14) }),
+  offset: 30,
+  setup: ({ spring }) => ({ sweep: spring(1.1, 90, 16), threat: spring(0, 160, 14) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const sweep = state === "loading" ? ctx.loop(2.6) * Math.PI * 2 : 0.8;
-    const blip = m.blip.to(state === "error" ? 1 : 0).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : "muted";
-    scene.box(0, 0, 0, 120, 120, 4, "base");
-    scene.disc(0, 0, 4.05, 46, "muted");
-    scene.disc(0, 0, 4.05, 30, "faint");
-    scene.disc(0, 0, 4.05, 14, "faint");
-    if (state !== "empty") {
-      scene.line([0, 0, 5], [46 * Math.cos(sweep), 46 * Math.sin(sweep), 5], tone, { bold: true });
-      scene.arc(0, 0, 4.1, 46, sweep - 0.8, sweep, tone, { opacity: 0.5 });
+    const empty = state === "empty";
+    // The scope faces the viewer on a stand; (u, v) are screen units across and up its face.
+    const CZ = 70, R = 48;
+    const at = (u: number, v: number): Vec3 => facing(shake, 0, CZ, u, v);
+    const ring = (r: number, steps = 40): Vec3[] => Array.from({ length: steps + 1 }, (_, i) => {
+      const a = (i / steps) * Math.PI * 2;
+      return at(r * Math.cos(a), r * Math.sin(a));
+    });
+    const BLIPS = [{ u: 22, v: 17 }, { u: -27, v: 10 }, { u: 8, v: -31 }, { u: -14, v: -16 }];
+    const threatAngle = Math.atan2(BLIPS[0]!.v, BLIPS[0]!.u);
+
+    // Where the beam points. It turns clockwise while loading; at rest it leans toward the pointer.
+    let sweep = 1.1;
+    if (state === "idle") {
+      const cy = -CZ + 30;
+      sweep = 1.1 + ctx.hover * 0.6 * Math.atan2(-(ctx.pointer.y - cy), ctx.pointer.x) / Math.PI;
     }
-    if (state === "error" || state === "loading") scene.disc(22 + shake, -14, 4.1, 3 + 2 * blip, "err", { fill: true });
-    if (state === "success") scene.check(0, 0, 14, "ok", ctx.fade());
+    if (state === "loading") { sweep = Math.PI / 2 - ctx.loop(2.4) * Math.PI * 2; m.sweep.set(sweep); }
+    if (state === "error") sweep = threatAngle;
+    const S = m.sweep.to(sweep).value, T = m.threat.to(state === "error" ? 1 : 0).value;
+    const screen: Tone = empty ? "ghost" : state === "success" ? "ok" : state === "error" ? "err" : "muted";
+    const beam: Tone = state === "loading" ? "hi" : state === "success" ? "ok" : state === "error" ? "err" : "base";
+
+    scene.box(0, 0, 0, 104, 84, 4, "base");
+    scene.box(shake, 0, 4, 46, 38, 8, empty ? "ghost" : "base");
+    scene.box(shake, 0, 12, 8, 8, 14, empty ? "ghost" : "base");
+    // The bezel and its screen.
+    scene.panel(ring(R + 6), empty ? "ghost" : "base");
+    scene.polyline(ring(R), screen);
+    if (empty) return;
+    scene.polyline(ring(R * 0.66), "faint");
+    scene.polyline(ring(R * 0.33), "faint");
+    scene.line(at(-R, 0), at(R, 0), "faint");
+    scene.line(at(0, -R), at(0, R), "faint");
+
+    // The afterglow: fading spokes trailing the beam.
+    if (state !== "success") {
+      for (let k = 14; k >= 1; k--) {
+        const a = S + k * 0.06;
+        scene.line(at(0, 0), at(R * Math.cos(a), R * Math.sin(a)), beam, { opacity: 0.6 * (1 - k / 15) });
+      }
+    }
+    scene.line(at(0, 0), at(R * Math.cos(S), R * Math.sin(S)), beam, { bold: true });
+
+    // Contacts glow as the beam passes them and fade behind it. A cleared screen shows none.
+    if (state !== "success") {
+      BLIPS.forEach((b, i) => {
+        const threat = state === "error" && i === 0;
+        let o = 0.35;
+        if (state === "loading") {
+          const behind = ((S - Math.atan2(b.v, b.u)) % (Math.PI * 2) + Math.PI * 4) % (Math.PI * 2);
+          o = Math.max(0.12, 1 - (Math.PI * 2 - behind) / 3);
+        }
+        if (state === "error") o = threat ? 1 : 0.2;
+        const tone: Tone = threat ? "err" : state === "loading" ? "hi" : "muted";
+        const dot = Array.from({ length: 13 }, (_, k) => at(b.u + 2.6 * Math.cos((k / 12) * Math.PI * 2), b.v + 2.6 * Math.sin((k / 12) * Math.PI * 2)));
+        scene.panel(dot, tone, o);
+        if (threat && T > 0.05) {
+          const halo = Array.from({ length: 25 }, (_, k) => at(b.u + 7 * T * Math.cos((k / 24) * Math.PI * 2), b.v + 7 * T * Math.sin((k / 24) * Math.PI * 2)));
+          scene.polyline(halo, "err", { opacity: T });
+        }
+      });
+    }
+    scene.panel(Array.from({ length: 13 }, (_, k) => at(2 * Math.cos((k / 12) * Math.PI * 2), 2 * Math.sin((k / 12) * Math.PI * 2))), beam);
   },
 });
 

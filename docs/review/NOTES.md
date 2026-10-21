@@ -62,3 +62,4 @@ errors, `NaN`/`undefined` in the markup and drawings that leave the viewBox.
 ## Security (early fix)
 
 - Fingerprint: the ridges were half circles cut off by their angle range; the print now sits whole on the glass of an upright reader as nested arches; loading sweeps a scan line that lights the ridges below it; success completes them in green; error breaks every other ridge (smudged) in red; empty is a dashed outline. The rest of the shelf is still to be redrawn.
+- Radar: the flat rings with a red dot that showed even while loading (red is for errors only) became a radar display: a round scope facing the viewer on a stand, with range rings, crosshairs, and a beam trailing a fading afterglow. Contacts light as the beam passes and fade behind it; error stops the beam on a single ringed red threat; success clears the screen in green; at rest the beam leans toward the pointer.
