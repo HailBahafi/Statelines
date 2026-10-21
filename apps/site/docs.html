@@ -52,7 +52,7 @@
           <button role="tab" aria-selected="false" data-value="bun">bun</button>
         </div>
         <div class="code"><div class="code-bar"><span class="code-label">Terminal</span><button class="copy" type="button" data-copy-from="pm-command">Copy</button></div><pre><code id="pm-command">npm i statelines</code></pre></div>
-        <p style="margin-top:14px">Importing one figure bundles only that figure. The whole library is about 30 KB gzipped.</p>
+        <p style="margin-top:14px">Importing one figure bundles only that figure. The whole library is about 70 KB gzipped, under 1 KB per figure on average.</p>
       </section>
 
       <section id="quick-start">
@@ -98,8 +98,8 @@ figure.destroy();                     // when the element is removed</code></pre
             <tbody>
               <tr><td><code>idle</code></td><td>The resting picture. The default.</td><td>Answers the pointer, then holds still.</td></tr>
               <tr><td><code>loading</code></td><td>Work in progress.</td><td>Loops. With <code>progress</code>, it follows the value instead.</td></tr>
-              <tr><td><code>success</code></td><td>Done.</td><td>Settles in green with a tick.</td></tr>
-              <tr><td><code>error</code></td><td>Failed.</td><td>Settles in red with a cross, and shakes once.</td></tr>
+              <tr><td><code>success</code></td><td>Done.</td><td>Settles in green in its finished pose: delivered, opened, lifted.</td></tr>
+              <tr><td><code>error</code></td><td>Failed.</td><td>Settles in red in a failed pose: dropped, stuck, broken. Shakes once.</td></tr>
               <tr><td><code>empty</code></td><td>Nothing here yet.</td><td>Drawn as a dashed ghost.</td></tr>
             </tbody>
           </table>
@@ -174,7 +174,7 @@ const html = `&lt;style&gt;${styles}&lt;/style&gt;` +
               <tr><td><code>intensity</code></td><td><code>number</code> 0–1</td><td><code>0.5</code></td><td>How strongly the figure answers the pointer. Values outside 0–1 are clamped.</td></tr>
               <tr><td><code>speed</code></td><td><code>number</code> 0–4</td><td><code>1</code></td><td>Animation speed. <code>0</code> freezes the figure.</td></tr>
               <tr><td><code>stroke</code></td><td><code>number</code></td><td><code>1</code></td><td>Stroke width in CSS pixels, at any size.</td></tr>
-              <tr><td><code>marks</code></td><td><code>boolean</code></td><td><code>true</code></td><td>Show the tick on success and the cross on error.</td></tr>
+              <tr><td><code>marks</code></td><td><code>boolean</code></td><td><code>true</code></td><td>Kept for compatibility. Figures no longer draw a tick or a cross, so it has no effect.</td></tr>
               <tr><td><code>interactive</code></td><td><code>boolean</code></td><td><code>true</code></td><td>Respond to the pointer at all.</td></tr>
               <tr><td><code>colors</code></td><td><code>{ plate, hi, edge, mid, lo, ok, err }</code></td><td>theme</td><td>Colours for this figure only, on top of the theme.</td></tr>
               <tr><td><code>theme</code></td><td><code>auto · light · dark</code></td><td><code>auto</code></td><td>Follows the page by default.</td></tr>
@@ -218,7 +218,7 @@ const html = `&lt;style&gt;${styles}&lt;/style&gt;` +
         <ul>
           <li>Each figure is an image with a description. Replace it with <span class="inline">label</span>, or <span class="inline">aria-label</span> in React.</li>
           <li>With <span class="inline">prefers-reduced-motion</span> set, every figure runs at 40% speed and still answers the pointer.</li>
-          <li>Colour is never the only signal: success adds a tick, and error adds a cross.</li>
+          <li>Colour is never the only signal: success and error each change the drawing's form as well as its colour.</li>
           <li>Figures do not take focus. If a figure is interactive for your product, wrap it in a focusable element and describe the action in its label.</li>
         </ul>
       </section>
@@ -251,10 +251,10 @@ export const beacon = defineFigure({
   setup: ({ spring }) =&gt; ({ lift: spring(0) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
-    const lift = m.lift.to(ctx.hover * 10).value;
+    // Success lifts the beacon clear of its plinth: a change of form, not only of colour.
+    const lift = m.lift.to(state === "success" ? 14 : ctx.hover * 10).value;
     scene.box(0, 0, 0, 80, 80, 6);
     scene.cylinder(0, 0, 6 + lift, 14, 40, state === "loading" ? "hi" : ctx.verdict());
-    if (state === "success") scene.check(0, 0, 46 + lift, "ok", ctx.fade());
   },
 });</code></pre></div>
         <h3>The context</h3>
@@ -282,7 +282,7 @@ export const beacon = defineFigure({
         <p>Every figure follows these rules. They are what make 101 figures read as one family.</p>
         <ol class="rule-list" style="margin-top:12px">
           <li>One isometric projection. The camera never moves.</li>
-          <li>One stroke weight. Bold is reserved for marks and progress.</li>
+          <li>One stroke weight. Bold is reserved for progress and handles.</li>
           <li>Solids hide what is behind them.</li>
           <li>One crease per box, and no shading.</li>
           <li>Colour means a verdict. Green is success and red is error.</li>

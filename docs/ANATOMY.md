@@ -58,7 +58,7 @@ All coordinates are world units. Boxes and cylinders are centred on (x, y) and r
 | `polyline(points, tone?, { bold, closed, opacity })` | A path through points. |
 | `arc(x, y, z, r, a0, a1, tone?, style?)` | Part of a flat circle. |
 | `panel(points, tone?, opacity?)` | A filled flat polygon in any plane, for doors and lids. |
-| `check(x, y, z, tone?, opacity?)` / `cross(...)` | The verdict marks, drawn flat. |
+| `check(...)` / `cross(...)` | Deprecated: draw nothing. Show success and error by changing the drawing's form. |
 | `sparkle(x, y, z, size, tone?, opacity?)` | The mark of generated content. |
 
 Tones: `base`, `hi`, `ok`, `err`, `muted`, `faint`, `ghost`.

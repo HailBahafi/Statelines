@@ -97,7 +97,6 @@ function render(figure: Entry): void {
   }
   controls.push(
     h("div", { class: "toggles" },
-      toggle("Tick and cross", true, v => { settings.marks = v; }),
       toggle("Respond to pointer", true, v => { settings.interactive = v; })),
     h("div", { class: "control" }, h("span", { class: "label" }, "Colours for this figure"),
       h("div", { class: "swatches" }, colorInput("ok", "Success", "#12845a"), colorInput("err", "Error", "#cf3b31"), colorInput("hi", "Active", "#111318")),
@@ -173,7 +172,7 @@ function propsTable(figure: Entry): HTMLElement {
     ["intensity", "number 0–1", "0.5", "How strongly it answers the pointer."],
     ["speed", "number 0–4", "1", "Animation speed."],
     ["stroke", "number", "1", "Stroke width in CSS pixels."],
-    ["marks", "boolean", "true", "The tick on success and the cross on error."],
+    ["marks", "boolean", "true", "Kept for compatibility; figures no longer draw a tick or a cross."],
     ["interactive", "boolean", "true", "Respond to the pointer at all."],
     ["colors", "{ plate, hi, edge, mid, lo, ok, err }", "theme", "Colours for this figure only."],
     ["theme", "auto · light · dark", "auto", "Follows the page by default."],

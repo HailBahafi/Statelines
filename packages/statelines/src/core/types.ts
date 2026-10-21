@@ -41,7 +41,7 @@ export interface FigureOptions {
   count?: number;
   /** Answer the pointer. Default true. */
   interactive?: boolean;
-  /** Draw the tick on success and the cross on error. Default true. */
+  /** Kept for compatibility. Figures no longer draw a tick or a cross, so this has no effect. */
   marks?: boolean;
   /** Per-figure colours, on top of the theme. */
   colors?: FigureColors;

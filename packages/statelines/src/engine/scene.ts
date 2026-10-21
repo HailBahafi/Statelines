@@ -140,14 +140,14 @@ export class Scene {
   }
 
   /**
-   * Verdict marks are no longer drawn: success and error read from their tone and change of form.
-   * `check` and `cross` stay only so figures not yet redrawn still compile; they draw nothing.
+   * @deprecated Verdict marks are no longer drawn: success and error read from their tone and a
+   * change of form. Kept so custom figures that call it still compile; it draws nothing.
    */
   check(_cx: number, _cy: number, _z: number, _tone?: Tone, _opacity?: number): this {
     return this;
   }
 
-  /** Draws nothing; see `check`. */
+  /** @deprecated Draws nothing; see `check`. */
   cross(_cx: number, _cy: number, _z: number, _tone?: Tone, _opacity?: number): this {
     return this;
   }
