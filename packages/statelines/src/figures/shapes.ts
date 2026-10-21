@@ -83,6 +83,18 @@ export function parcel(scene: Scene, x: number, y: number, z: number, tone: Tone
   scene.line([x, y - 12, z + 20.05], [x, y + 12, z + 20.05], "muted", { opacity });
 }
 
+/**
+ * The verdict token: a low disc in the verdict tone with the tick or the cross on its top face,
+ * so the mark always lies on a surface that fits it. Draws nothing outside success and error.
+ */
+export function badge(scene: Scene, x: number, y: number, z: number, state: string, opacity?: number, r = 13): void {
+  if (state !== "success" && state !== "error") return;
+  const ok = state === "success";
+  scene.cylinder(x, y, z, r, 3, ok ? "ok" : "err", opacity);
+  if (ok) scene.check(x, y, z + 3.05, "ok", opacity);
+  else scene.cross(x, y, z + 3.05, "err", opacity);
+}
+
 /** An open tray: floor and four walls. `inside` is drawn between the back and front walls. */
 export function tray(scene: Scene, w: number, d: number, wall: number, z: number, tone: Tone, inside: () => void): void {
   const t = 3;

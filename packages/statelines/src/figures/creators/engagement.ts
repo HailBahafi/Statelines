@@ -1,10 +1,12 @@
 import { defineFigure } from "../../core/define";
 import { clamp, wrap } from "../../engine/math";
-import { heart } from "../shapes";
+import type { Tone, Vec3 } from "../../engine/scene";
+import { badge, frontArc, heart } from "../shapes";
 
-const POST = { x: -14, y: 0, w: 58, h: 74 };
-const FRONT = POST.y + 2;
-const BARS = [{ y: -16, h: 30 }, { y: 0, h: 44 }, { y: 16, h: 22 }];
+const POST = { x: -18, y: 0, w: 58, d: 5, h: 78 };
+const FRONT = POST.y + POST.d / 2 + 0.05;
+const BARS = [{ y: -16, h: 30 }, { y: 0, h: 46 }, { y: 16, h: 22 }];
+const BAR_X = 44;
 
 /** A post with hearts rising off it and its likes, comments and shares beside. Use for engagement and post analytics. */
 export const engagement = defineFigure({
@@ -15,37 +17,45 @@ export const engagement = defineFigure({
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const { x, w, h } = POST, px = x + shake;
+    const { w, h } = POST, px = POST.x + shake;
+    const on = (u: number, z: number): Vec3 => [px + u, FRONT, z];
 
-    scene.box(4, 0, 0, 140, 60, 4, "base");
+    scene.box(4, 0, 0, 148, 72, 4, "base");
     if (state === "empty") {
-      scene.box(px, POST.y, 4, w, 4, h, "ghost");
-      BARS.forEach(b => scene.box(46, b.y, 4, 10, 10, 10, "ghost"));
+      scene.box(px, POST.y, 4, w, POST.d, h, "ghost");
+      BARS.forEach(b => scene.box(BAR_X, b.y, 4, 10, 10, 8, "ghost"));
       return;
     }
-    scene.box(px, POST.y, 4, w, 4, h, ctx.verdict());
-    scene.polyline([[px - 22, FRONT, 22], [px + 22, FRONT, 22], [px + 22, FRONT, 70], [px - 22, FRONT, 70]], "muted", { closed: true });
-    scene.polyline([[px - 22, FRONT, 32], [px - 6, FRONT, 50], [px + 4, FRONT, 40], [px + 22, FRONT, 58]], "muted");
-    scene.line([px - 22, FRONT, 14], [px + 6, FRONT, 14], "muted");
+
+    // The post: a photo, a like button and a caption, all on its face.
+    const frame: Tone = state === "loading" ? "hi" : ctx.verdict();
+    scene.box(px, POST.y, 4, w, POST.d, h, frame);
+    scene.polyline([on(-22, 34), on(22, 34), on(22, 74), on(-22, 74)], "muted", { closed: true });
+    scene.polyline([on(-22, 34), on(-8, 52), on(0, 44), on(10, 58), on(22, 42)], "muted");
+    scene.polyline(frontArc(px + 12, FRONT, 66, 3.5, 0, Math.PI * 2, 12), "muted");
+    scene.polyline(frontArc(px - 17, FRONT, 23, 3, 0, Math.PI * 2, 12), state === "success" ? "ok" : "muted");
+    scene.line(on(-9, 25), on(16, 25), "muted");
+    scene.line(on(-9, 17), on(6, 17), "faint");
 
     BARS.forEach((b, i) => {
       let target = b.h;
       if (state === "loading") { target = b.h * (0.4 + 0.6 * Math.abs(Math.sin(ctx.time * 1.6 + i))); m.bars[i]!.set(target); }
-      if (state === "error") target = 4;
+      if (state === "success") target = b.h + 12;
+      if (state === "error") target = 3;
       if (state === "idle") target = b.h + ctx.hover * 8 * (i === 1 ? 1 : 0.5);
       const H = m.bars[i]!.to(target).value;
-      const tone = state === "loading" ? "hi" : state === "error" ? "muted" : i === 1 ? ctx.verdict() : "base";
-      scene.box(46, b.y, 4, 10, 10, Math.max(0.5, H), tone);
+      const tone: Tone = state === "loading" ? "hi" : state === "error" ? "muted" : i === 1 ? ctx.verdict() : "base";
+      scene.box(BAR_X, b.y, 4, 10, 10, Math.max(0.5, H), tone);
     });
 
     if (state === "loading") {
       for (let k = 0; k < 4; k++) {
         const q = wrap(ctx.time * 0.7 + k / 4, 1);
-        heart(scene, px + 14 - k * 9, POST.y, h + 8 + q * 46, 12 + 4 * (1 - q), "hi", clamp((1 - q) * 1.4));
+        heart(scene, px + 14 - k * 9, POST.y, h + 10 + q * 40, 12 + 4 * (1 - q), "hi", clamp((1 - q) * 1.4));
       }
     }
     const big = m.big.to(state === "success" ? 1 : state === "idle" ? ctx.hover * 0.7 : 0).value;
-    if (big > 0.02) heart(scene, px, POST.y, h + 22, 26 * big, state === "success" ? "ok" : "hi", Math.min(1, big * 1.5));
-    if (state === "error") scene.cross(px, POST.y + 20, 4, "err", ctx.fade());
+    if (big > 0.02) heart(scene, px, POST.y, h + 24, 26 * big, state === "success" ? "ok" : "base", Math.min(1, big * 1.5));
+    badge(scene, POST.x, 20, 4, state, ctx.fade());
   },
 });
