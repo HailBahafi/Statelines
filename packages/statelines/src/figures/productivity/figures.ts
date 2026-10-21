@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
-import { bump, clamp, falloff, lerp, smoothstep, wrap } from "../../engine/math";
+import { bump, clamp, lerp, smoothstep } from "../../engine/math";
 import type { Scene, Tone, Vec3 } from "../../engine/scene";
-import { facing, faceArc, parcel } from "../shapes";
+import { facing, parcel, person, tray } from "../shapes";
 
 type P2 = [number, number];
 type At = (l: number, w: number, n: number) => Vec3;
@@ -475,25 +475,78 @@ export const notes = defineFigure({
   },
 });
 
+/** A box turned about a line along x through `o`: x across, u along the turned y, h along the turned z. Draws the faces that look toward us. */
+function turned(scene: Scene, o: Vec3, a: number, x0: number, x1: number, u0: number, u1: number, h0: number, h1: number,
+                tone: Tone, opacity?: number): (x: number, u: number, h: number) => Vec3 {
+  const c = Math.cos(a), s = Math.sin(a);
+  const T = (x: number, u: number, h: number): Vec3 => [o[0] + x, o[1] + u * c - h * s, o[2] + u * s + h * c];
+  const uf = c + s > 0 ? u1 : u0, hf = c - s > 0 ? h1 : h0;
+  scene.panel([T(x1, u0, h0), T(x1, u1, h0), T(x1, u1, h1), T(x1, u0, h1)], tone, opacity);
+  scene.panel([T(x0, uf, h0), T(x1, uf, h0), T(x1, uf, h1), T(x0, uf, h1)], tone, opacity);
+  scene.panel([T(x0, u0, hf), T(x1, u0, hf), T(x1, u1, hf), T(x0, u1, hf)], tone, opacity);
+  return T;
+}
+
 /** A folder of files being archived. Use for archiving, cleanup and retention. `count`: files, 1–4. */
 export const archive = defineFigure({
   name: "Archive",
-  label: "Files being archived into a box",
-  offset: 8,
-  setup: ({ spring }) => ({ files: Array.from({ length: 4 }, () => spring(0, 150, 18)) }),
+  label: "Files being filed into an archive box",
+  offset: 24,
+  setup: ({ spring }) => ({ lid: spring(0, 110, 14), jam: spring(0, 120, 14) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
-    const shake = ctx.shake();
+    const shake = ctx.shake(), empty = state === "empty";
     const n = ctx.count(3, 4, 1);
-    scene.box(0, 0, 0, 120, 70, 16, state === "empty" ? "ghost" : "base");
-    scene.box(0, -34, 16, 130, 10, 6, state === "empty" ? "ghost" : "muted");
-    for (let k = 0; k < 4; k++) {
-      const q = state === "loading" ? (ctx.loop(2.4) + k * 0.2) % 1 : 0;
-      const z = k < n ? 16 + (state === "loading" ? 10 * Math.sin(q * Math.PI) : 0) + k * 2 : -8;
-      const Z = m.files[k]!.to(state === "empty" ? -8 : z).value;
-      if (k >= n && state !== "loading") continue;
-      scene.box(0 + (state === "error" && k === 0 ? shake : 0), -22 + k * 3, Z + 16 - (k === 0 ? 0 : 0), 84, 22, 2, state === "success" ? "ok" : state === "error" && k === 0 ? "err" : "muted", state === "empty" ? 0.5 : 1);
+    const A = m.lid.to(state === "loading" || empty ? 1.95 : state === "error" ? 0.62 : state === "idle" ? ctx.hover * 0.22 : 0).value;
+    const J = clamp(m.jam.to(state === "error" ? 1 : 0).value);
+    let dz = 0, dop = 1;
+    if (state === "loading") {
+      const q = ctx.loop(1.8);
+      dz = 46 * (1 - smoothstep(q / 0.7));
+      dop = smoothstep(q / 0.12) * (1 - smoothstep((q - 0.88) / 0.12));
     }
+    const W = 84, D = 50, H = 30, top = 4 + 3 + H;
+    const box: Tone = empty ? "ghost" : state === "success" ? "ok" : "base";
+    const fy = (k: number) => (n === 1 ? 0 : -16 + (k * 32) / (n - 1));
+    const lid = () => {
+      if (empty) {
+        const c = Math.cos(A), s = Math.sin(A), L = (x: number, u: number): Vec3 => [x, -27 + u * c, top + u * s];
+        scene.polyline([L(-45, 0), L(45, 0), L(45, 54), L(-45, 54)], "ghost", { closed: true });
+        return;
+      }
+      const T = turned(scene, [0, -27, top], A, -45, 45, 0, 54, -6, 3, box);
+      if (Math.cos(A) - Math.sin(A) > 0) scene.line(T(-30, 47, 3.05), T(30, 47, 3.05), "faint");
+    };
+
+    scene.box(0, 2, 0, 132, 100, 4, "base");
+    if (A > Math.PI / 2) lid();
+    tray(scene, W, D, H, 4, box, () => {
+      if (empty) return;
+      const still = state === "loading" || state === "error" ? n - 1 : n;
+      // A file: an upright folder with a tab along its top edge.
+      const file = (k: number, z: number, tone: Tone, opacity?: number) => {
+        scene.box(-2, fy(k), z, 72, 2, 28, tone, opacity);
+        scene.box(-26 + k * 16, fy(k), z + 28, 14, 2, 6, tone, opacity);
+      };
+      for (let k = 0; k < still; k++) file(k, 7, "base");
+      if (state === "loading") file(n - 1, 7 + dz, "hi", dop);
+      if (state === "error") {
+        // The last file jams on its way in and stands crooked out of the box, holding the lid up.
+        const T = turned(scene, [-2 + shake, fy(n - 1), 7 + 18 * J], -0.38 * J, -36, 36, -1, 1, 0, 28, "err");
+        scene.panel([T(-26 + (n - 1) * 16 - 7, 1, 28), T(-26 + (n - 1) * 16 + 7, 1, 28), T(-26 + (n - 1) * 16 + 7, 1, 34), T(-26 + (n - 1) * 16 - 7, 1, 34)], "err");
+      }
+    });
+    // The front: a hand hole and a label holder; another hand hole on the right end.
+    if (!empty) {
+      const Y = D / 2 + 0.05;
+      const slot = (pts: Vec3[]) => scene.polyline(pts, "muted", { closed: true, bold: true });
+      slot([[-9, Y, 22], [9, Y, 22], [11, Y, 24.5], [9, Y, 27], [-9, Y, 27], [-11, Y, 24.5]]);
+      scene.polyline([[-15, Y, 9], [15, Y, 9], [15, Y, 18], [-15, Y, 18]], box === "base" ? "muted" : box, { closed: true });
+      scene.line([-10, Y, 13.5], [8, Y, 13.5], "faint");
+      const Xe = W / 2 + 0.05;
+      slot([[Xe, 8, 22], [Xe, -8, 22], [Xe, -10, 24.5], [Xe, -8, 27], [Xe, 8, 27], [Xe, 10, 24.5]]);
+    }
+    if (A <= Math.PI / 2) lid();
   },
 });
 
@@ -501,91 +554,266 @@ export const archive = defineFigure({
 export const pack = defineFigure({
   name: "Pack",
   label: "A parcel dropping into a box",
-  offset: 6,
-  setup: ({ spring }) => ({ drop: spring(40, 160, 16) }),
+  offset: 14,
+  setup: ({ spring }) => ({ drop: spring(0, 160, 16), flap: spring(2.3, 90, 13), tip: spring(0, 120, 14) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
-    const shake = ctx.shake();
-    let z = 40;
-    if (state === "loading") z = 40 - 34 * smoothstep(ctx.loop(2));
-    if (state === "success") z = 0;
-    if (state === "error") z = 30;
-    const Z = m.drop.to(z).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 90, 90, 6, tone);
-    scene.box(-45, 0, 6, 6, 90, 22, "muted");
-    scene.box(45, 0, 6, 6, 90, 22, "muted");
-    scene.box(0, -45, 6, 90, 6, 22, "muted");
-    if (state !== "empty") parcel(scene, shake, 0, Z + 6, tone === "base" ? "base" : tone);
+    const shake = ctx.shake(), empty = state === "empty";
+    let p = 0;
+    if (state === "loading") { p = smoothstep(clamp(ctx.loop(2.2) / 0.85)); m.drop.set(p); }
+    if (state === "success") p = 1;
+    const P = clamp(m.drop.to(p).value);
+    const phi = m.flap.to(state === "success" ? 0 : state === "idle" ? 2.3 - ctx.hover * 0.25 : 2.3).value;
+    const tipT = clamp(m.tip.to(state === "error" ? 1 : 0).value);
+    const box: Tone = empty ? "ghost" : state === "success" ? "ok" : "base";
+    const top = 4 + 3 + 40, c = Math.cos(phi), s = Math.sin(phi);
+
+    // Four flaps hinged on the rim; 0 folds them shut over the top, larger angles open them outward.
+    const flap = (side: number) => {
+      const pts: Vec3[] = [];
+      const depth = side % 2 ? 26 : 30, lift = side % 2 ? 0 : 0.6;
+      for (const [t, d] of [[-30, 0], [30, 0], [30, depth], [-30, depth]] as const) {
+        const r = 30 - d * c, z = top + d * s + lift;
+        pts.push(side === 0 ? [t, r, z] : side === 1 ? [r, t, z] : side === 2 ? [t, -r, z] : [-r, t, z]);
+      }
+      if (empty) scene.polyline(pts, "ghost", { closed: true });
+      else scene.panel(pts, box);
+    };
+    // The parcel lifts off the plate, moves over the box and lowers in.
+    const up = smoothstep(P / 0.35), across = smoothstep((P - 0.3) / 0.35), down = smoothstep((P - 0.65) / 0.35);
+    const px = lerp(-14, 0, across), py = lerp(50, 0, across), pz = 4 + 52 * up - 49 * down;
+    const ptone: Tone = state === "loading" ? "hi" : state === "success" ? "ok" : "base";
+    const inside = down > 0.05;
+
+    scene.box(0, 10, 0, 128, 124, 4, "base");
+    if (phi > Math.PI / 2) { flap(2); flap(3); }
+    tray(scene, 60, 60, 40, 4, box, () => {
+      if (!empty && inside && state !== "error") parcel(scene, px, py, pz, ptone);
+    });
+    if (!empty) {
+      // A this-way-up mark on the front.
+      scene.polyline([[-6, 30.05, 30], [-6, 30.05, 37], [-8.5, 30.05, 34.5]], "faint");
+      scene.polyline([[-6, 30.05, 37], [-3.5, 30.05, 34.5]], "faint");
+      scene.polyline([[2, 30.05, 30], [2, 30.05, 37], [-0.5, 30.05, 34.5]], "faint");
+      scene.polyline([[2, 30.05, 37], [4.5, 30.05, 34.5]], "faint");
+      scene.line([-12, 30.05, 27], [10, 30.05, 27], "faint");
+    }
+    if (phi > Math.PI / 2) { flap(0); flap(1); }
+    else { flap(1); flap(3); flap(0); flap(2); }
+    // Packed: tape along the seam and down the end.
+    if (state === "success" && phi < 0.3) {
+      const o = ctx.fade(0.4);
+      scene.panel([[-31, -4, top + 0.7], [31, -4, top + 0.7], [31, 4, top + 0.7], [-31, 4, top + 0.7]], "ok", o);
+      scene.panel([[30.1, -4, top + 0.7], [30.1, 4, top + 0.7], [30.1, 4, top - 10], [30.1, -4, top - 10]], "ok", o);
+    }
+    if (empty) return;
+    if (state === "error") {
+      // It misses: the parcel ends tipped against the front of the box.
+      const bx = lerp(-14, 10, tipT) + shake, by = lerp(38, 36, tipT);
+      const T = turned(scene, [bx, by, 4 + 10 * bump(tipT)], 0.32 * tipT, -12, 12, 0, 24, 0, 20, "err");
+      scene.line(T(0, 0, 20.05), T(0, 24, 20.05), "err");
+    } else if (!inside) parcel(scene, px, py, pz, ptone);
   },
 });
+
+const PUSHPIN = mirror([[0, 0], [0.3, 0.6], [12, 0.6], [12, 6], [14, 6], [14, 3.4], [24, 3.4], [24, 9], [32, 9], [32.6, 0]]);
+const PUSHPIN_BANDS: P2[] = [[14, 6], [24, 9]];
 
 /** A pinned note with a pin dropping in. Use for pins, bookmarks and highlights. */
 export const pin = defineFigure({
   name: "Pin",
-  label: "A pin dropping onto a card",
-  offset: 4,
-  setup: ({ spring }) => ({ drop: spring(40, 170, 16) }),
+  label: "A push pin dropping onto a note on a corkboard",
+  offset: -6,
+  setup: ({ spring }) => ({ drop: spring(30, 170, 16), up: spring(0, 140, 16), card: spring(0.14, 120, 15), slip: spring(0, 100, 13) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
-    const shake = ctx.shake();
-    let z = 40;
-    if (state === "loading") z = 40 - 30 * bump(ctx.loop(1.6));
-    if (state === "success" || state === "error") z = 12;
-    if (state === "idle") z = 40 - ctx.hover * 8;
-    const Z = m.drop.to(z).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 96, 70, 3, "base");
-    for (let k = 0; k < 3; k++) scene.line([-32, -18 + k * 14, 3.05], [22 - k * 6, -18 + k * 14, 3.05], "muted");
-    scene.cylinder(-18 + shake, 10, 3, 3, Math.max(0.5, Z - 3), tone);
-    scene.disc(-18 + shake, 10, Z, 6, tone, { fill: true });
+    const shake = ctx.shake(), empty = state === "empty";
+    let z = 30;
+    if (state === "loading") z = 30 - 28 * bump(ctx.loop(1.6));
+    if (state === "success") z = 0;
+    const Z = m.drop.to(z).value, U = m.up.to(state === "loading" || state === "success" ? 1 : 0).value;
+    const r = m.card.to(state === "success" ? 0 : state === "error" ? 0.45 : 0.14).value;
+    const S = clamp(m.slip.to(state === "error" ? 1 : 0).value);
+
+    // A corkboard in a wooden frame, a few specks in the cork.
+    scene.box(0, 0, 0, 132, 108, 4, "base");
+    scene.box(0, 0, 4, 112, 88, 6, empty ? "ghost" : "base");
+    const top = 10.05;
+    if (!empty) {
+      scene.rect(-50, -38, 50, 38, top, "faint");
+      for (const [x, y] of [[-40, -28], [-30, 26], [34, -30], [42, 6], [-44, 4], [20, 30], [8, -32]] as const) scene.disc(x, y, top, 0.9, "muted", { fill: true });
+    }
+    // The note: a card with three lines, turned a little; on error it slips off the edge.
+    const cx = -4 + 26 * S + shake, cy = 2 + 14 * S, cz = 10.6;
+    const C = (u: number, v: number): Vec3 => [cx + u * Math.cos(r) - v * Math.sin(r), cy + u * Math.sin(r) + v * Math.cos(r), cz];
+    const note: Tone = empty ? "ghost" : state === "success" ? "ok" : state === "error" ? "err" : "base";
+    const card = [C(-28, -20), C(28, -20), C(28, 20), C(-28, 20)];
+    if (empty) { scene.polyline(card, "ghost", { closed: true }); return; }
+    scene.panel(card, note);
+    for (let k = 0; k < 3; k++) scene.line(C(-18, 0 + k * 7), C(k === 2 ? 4 : 20, 0 + k * 7), note === "base" ? "muted" : note);
+
+    // The pin: needle, flange, waist and head. It lies on the cork, drops in, or on error lies bent on the card.
+    const [px, py] = C(-14, -10);
+    if (state === "error") {
+      // It did not hold: the pin has fallen out and lies on its side across the note.
+      drawTool(scene, PUSHPIN, PUSHPIN_BANDS, tool([px + 4, py + 10, cz + 0.6], -2.6 + 0.4 * S, 0.18), "err");
+      return;
+    }
+    const lift = state === "idle" ? ctx.hover * 4 : 0;
+    drawTool(scene, PUSHPIN, PUSHPIN_BANDS, tool([40, -30, 11.2 + lift], Math.PI / 2 + 0.2, 0.2), "base", 1 - U);
+    if (U > 0.02) {
+      const tone: Tone = state === "loading" ? "hi" : "ok", z0 = cz - 12 + Z;
+      if (Z > 1) scene.disc(px, py, cz + 0.05, 3.4, "faint", { opacity: U });
+      if (Z > 0.3) scene.line([px, py, Math.max(cz, z0)], [px, py, z0 + 12], tone, { bold: true, opacity: U });
+      scene.cylinder(px, py, z0 + 12, 6, 2, tone, U);
+      scene.cylinder(px, py, z0 + 14, 3.4, 10, tone, U);
+      scene.cylinder(px, py, z0 + 24, 9, 8, tone, U);
+    }
   },
 });
+
+const MARKER = mirror([[0, 0], [1.5, 1.2], [4, 1.6], [5, 3], [30, 3], [31, 3.4], [42, 3.4], [43, 0]]);
+const MARKER_BANDS: P2[] = [[5, 3], [30, 3]];
+
+/** Strokes on the board, in its own coordinates: a across to the right, z up. */
+const STROKES: P2[][] = [
+  [[-40, 64], [-18, 64], [-18, 78], [-40, 78], [-40, 64]],
+  [[-18, 71], [-5, 71], [-8, 74], [-5, 71], [-8, 68]],
+  [[-4, 64], [18, 64], [18, 78], [-4, 78], [-4, 64]],
+  Array.from({ length: 17 }, (_, i) => [34 + 9 * Math.cos((i / 16) * Math.PI * 2 + Math.PI), 71 + 9 * Math.sin((i / 16) * Math.PI * 2 + Math.PI)] as P2),
+  [[-40, 40], [-26, 48], [-14, 44], [0, 54], [14, 49], [38, 58]],
+];
+/** The first `f` of a stroke's length. */
+function partial(pts: readonly P2[], f: number): P2[] {
+  const seg = pts.slice(1).map((p, i) => Math.hypot(p[0] - pts[i]![0], p[1] - pts[i]![1]));
+  let left = seg.reduce((a, b) => a + b, 0) * clamp(f);
+  const out: P2[] = [pts[0]!];
+  for (let i = 0; i < seg.length && left > 0; i++) {
+    const t = Math.min(1, left / seg[i]!), a = pts[i]!, b = pts[i + 1]!;
+    out.push([lerp(a[0], b[0], t), lerp(a[1], b[1], t)]);
+    left -= seg[i]!;
+  }
+  return out;
+}
 
 /** A whiteboard being drawn on, one stroke after another. Use for brainstorms, collaboration and drawing tools. */
 export const whiteboard = defineFigure({
   name: "Whiteboard",
   label: "A whiteboard being drawn on",
-  offset: 4,
-  setup: ({ spring }) => ({ ink: spring(0, 130, 16) }),
+  offset: 18,
+  setup: ({ spring }) => ({ up: spring(0, 140, 16), fall: spring(0, 110, 13) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
-    const shake = ctx.shake();
-    const strokes = state === "loading" ? Math.floor(ctx.loop(3.2) * 4) : state === "success" ? 4 : state === "empty" ? 0 : 2;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : "muted";
-    scene.box(0, 0, 0, 130, 90, 3, "base");
-    scene.rect(-54, -36, 54, 36, 3.05, "faint");
-    const paths: [number, number][][] = [
-      [[-42, -20], [-20, -28], [-6, -10]],
-      [[0, -26], [18, -26], [34, -10]],
-      [[-40, 8], [-10, 12], [16, 6], [40, 14]],
-      [[-22, 26], [0, 22], [22, 30]],
-    ];
-    paths.slice(0, strokes).forEach((p, i) => {
-      const pts = p.map(([x, y]) => [x + (state === "error" && i === 3 ? shake : 0), y, 3.1] as Vec3);
-      scene.polyline(pts, state === "loading" && i === strokes - 1 ? "hi" : i === 3 && state === "error" ? "err" : tone, { bold: true });
+    const shake = ctx.shake(), empty = state === "empty";
+    let strokes = state === "success" ? 5 : state === "error" ? 3 : state === "idle" ? 3 : 0, cur = -1, f = 0;
+    if (state === "loading") {
+      const q = ctx.loop(4.4) * 5;
+      cur = Math.min(4, Math.floor(q)); f = smoothstep(clamp((q - cur) / 0.8)); strokes = cur;
+    }
+    const U = m.up.to(state === "loading" ? 1 : 0).value, Fl = clamp(m.fall.to(state === "error" ? 1 : 0).value);
+
+    // A mobile stand: casters, feet, uprights, the board with its face to the lower right and a marker tray.
+    const X = -10, Xf = X + 2.05, frame: Tone = empty ? "ghost" : "base";
+    scene.box(4, 0, 0, 96, 128, 4, "base");
+    for (const y of [-46, 46]) {
+      for (const dx of [-17, 17]) scene.cylinder(X + dx, y, 4, 2.4, 2.5, frame);
+      scene.box(X, y, 6.5, 40, 5, 3, frame);
+      scene.box(X, y, 9.5, 4, 4, 21, frame);
+    }
+    scene.box(X + shake, 0, 30, 4, 104, 62, frame);
+    const B = (a: number, z: number, n = 0): Vec3 => [Xf + n + shake, -a, z];
+    if (empty) return;
+    scene.polyline([B(-49, 33), B(49, 33), B(49, 89), B(-49, 89)], "faint", { closed: true });
+    scene.box(Xf + 3.5, 0, 27.5, 7, 92, 2, "base");
+    scene.box(Xf + 6.5, 0, 29.5, 1, 92, 2.5, "base");
+
+    // The drawing: two boxes joined by an arrow, a circle and a rising line.
+    const ink: Tone = state === "success" ? "ok" : "base";
+    STROKES.forEach((s, i) => {
+      if (i < strokes) scene.polyline(s.map(([a, z]) => B(a, z, 0.05)), i === 2 && state === "error" ? "err" : ink, { bold: true });
+      else if (i === cur && f > 0.01) scene.polyline(partial(s, f).map(([a, z]) => B(a, z, 0.05)), "hi", { bold: true });
     });
+    // Error: the last box is scribbled out.
+    if (state === "error") {
+      const o = ctx.fade(0.5);
+      scene.polyline(Array.from({ length: 9 }, (_, i) => B(-2 + i * 2.6, i % 2 ? 62 : 80, 0.1)), "err", { bold: true, opacity: o });
+    }
+
+    // The tray holds an eraser and a marker; the other marker is in use, or has fallen on error.
+    scene.box(Xf + 3.5, 34, 29.5, 6, 14, 5, "muted");
+    if (state === "loading" && U > 0.02) {
+      const s = STROKES[Math.max(0, cur)]!, pts = partial(s, f), [a, z] = pts[pts.length - 1]!;
+      drawTool(scene, MARKER, MARKER_BANDS, tool(B(a, z, 0.4), 0.55, 0.3), "hi", U);
+    } else if (state === "error") {
+      drawTool(scene, MARKER, MARKER_BANDS, tool([lerp(Xf + 3.5, 24, Fl), lerp(-44, -10, Fl), lerp(32.6, 7.4, Fl) + 8 * bump(Fl)], Math.PI / 2 + 1.1 * Fl, 0), "err");
+    } else {
+      drawTool(scene, MARKER, MARKER_BANDS, tool([Xf + 3.5, -44, 32.6 + (state === "idle" ? ctx.hover * 3 : 0)], Math.PI / 2, 0), "base");
+    }
   },
 });
 
-/** A chart of tasks completing on a progress track with a flag at the finish. Use for milestones, goals and launches. */
+/** A road past milestones to a finish flag. Use for milestones, goals and launches. */
 export const milestone = defineFigure({
   name: "Milestone",
-  label: "A track with milestones and a flag",
-  offset: 4,
-  setup: ({ spring }) => ({ runner: spring(0, 120, 16) }),
+  label: "A walker on a road past milestones to a flag",
+  offset: 0,
+  setup: ({ spring }) => ({ runner: spring(0, 120, 16), flag: spring(0, 110, 14), fall: spring(0, 100, 13) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
-    const shake = ctx.shake();
-    const p = state === "loading" ? ctx.progress(3) : state === "success" ? 1 : state === "error" ? 0.45 : state === "empty" ? 0 : 0.3;
-    const P = m.runner.to(p).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : "base";
-    scene.box(0, 0, 0, 150, 60, 3, "base");
-    scene.line([-60, 0, 4], [60, 0, 4], "faint", { bold: true });
-    scene.line([-60, 0, 4.05], [-60 + 120 * P, 0, 4.05], tone === "base" ? "hi" : tone, { bold: true });
-    [-30, 0, 30].forEach(x => scene.disc(x, 0, 4.1, 4, x / 60 < P - 0.5 ? "hi" : "muted", { fill: true }));
-    scene.line([58, 0, 4], [58, 0, 36], "base", { bold: true });
-    scene.polyline([[58, 0, 36], [58, 0, 36], [72, 0, 36]].map(([a, b, c]) => [a, b, c] as Vec3), tone, { closed: true });
-    scene.disc(-60 + 120 * P + shake, 0, 6, 4, tone, { fill: true });
+    const shake = ctx.shake(), empty = state === "empty";
+    const p = state === "loading" ? ctx.progress(3) : state === "success" ? 1 : state === "error" ? 0.4 : state === "empty" ? 0 : 0.3;
+    const P = clamp(m.runner.to(p).value);
+    const F = clamp(m.flag.to(state === "success" ? 1 : 0).value), Fa = clamp(m.fall.to(state === "error" ? 1 : 0).value);
+    const X0 = -62, X1 = 50, rx = (t: number) => lerp(X0, X1, t), RY = 6;
+    const road: Tone = empty ? "ghost" : "base";
+    const walker: Tone = state === "loading" ? "hi" : state === "idle" ? "base" : ctx.verdict();
+
+    scene.box(0, 0, 0, 152, 64, 4, "base");
+    // The flag at the finish: a footing, a pole and a pennant that runs up on success.
+    const fx = X1 + 10, fyy = -12;
+    scene.box(fx, fyy, 4, 7, 7, 3, road);
+    scene.cylinder(fx, fyy, 7, 1.6, 62, road);
+    scene.cylinder(fx, fyy, 69, 2.6, 2.6, road);
+    const ft = lerp(40, 67, F), wave = (k: number) => Math.sin(k * 1.6) * 2;
+    const pennant: Vec3[] = [0, 1, 2, 3].map(k => [fx, fyy - 2 - k * 9, ft + wave(k)] as Vec3)
+      .concat([3, 2, 1, 0].map(k => [fx, fyy - 2 - k * 9, ft - 18 + wave(k)] as Vec3));
+    if (empty) scene.polyline(pennant, "ghost", { closed: true });
+    else scene.panel(pennant, state === "success" ? "ok" : state === "idle" ? "muted" : "base");
+
+    // Milestones behind the road: arched stones with a band; on error the one past the break has toppled.
+    const stone = (t: number, k: number) => {
+      const x = rx(t), y = -6;
+      const arch = (n: number): Vec3[] => {
+        const pts: Vec3[] = [[x - 6, y + n, 4], [x + 6, y + n, 4]];
+        for (let i = 0; i <= 8; i++) { const a = (i / 8) * Math.PI; pts.push([x + 6 * Math.cos(a), y + n, 16 + 6 * Math.sin(a)]); }
+        return pts;
+      };
+      const passed = P >= t - 0.01;
+      const tone: Tone = empty ? "ghost" : state === "success" ? "ok" : passed ? "base" : "muted";
+      if (state === "error" && k === 2) {
+        const T = turned(scene, [x, y - 2.5, 4], (Math.PI / 2) * Fa, -6, 6, 0, 5, 0, 22, "err");
+        scene.line(T(-4, 5.05, 14), T(4, 5.05, 14), "err");
+        return;
+      }
+      if (empty) { scene.polyline(arch(2.5), "ghost", { closed: true }); return; }
+      scene.panel(arch(-2.5), tone);
+      scene.panel(arch(2.5), tone);
+      scene.line([x - 4, y + 2.55, 14], [x + 4, y + 2.55, 14], passed ? "base" : "faint", { bold: passed });
+    };
+    [0.25, 0.5, 0.75].forEach(stone);
+
+    // The road, a dashed centre line and a finish line; on error a gap breaks it.
+    const gap = state === "error" ? [0.5, 0.62] : null;
+    const seg = (a: number, b: number) => scene.box((rx(a) + rx(b)) / 2, RY, 4, rx(b) - rx(a), 18, 1.5, road);
+    if (gap) { seg(-0.06, gap[0]!); seg(gap[1]!, 1.06); }
+    else seg(-0.06, 1.06);
+    if (empty) return;
+    for (let t = 0; t < 1; t += 0.09) if (!gap || t + 0.04 < gap[0]! || t > gap[1]!) scene.line([rx(t), RY, 5.55], [rx(t + 0.04), RY, 5.55], "faint");
+    scene.line([X1 + 2, RY - 9, 5.6], [X1 + 2, RY + 9, 5.6], state === "success" ? "ok" : "muted", { bold: true });
+    if (gap) scene.polyline([[rx(gap[0]!), RY - 9, 4.05], [rx(0.56) - 2, RY - 3, 4.05], [rx(0.56) + 2, RY + 2, 4.05], [rx(gap[1]!), RY + 9, 4.05]], "err", { opacity: ctx.fade(0.4) });
+
+    // The trail walked so far, and the walker.
+    if (P > 0.01) scene.line([rx(0), RY, 5.6], [rx(P), RY, 5.6], state === "idle" ? "muted" : walker, { bold: true });
+    person(scene, rx(P) + shake, RY, 5.5, walker, undefined, 1.05);
   },
 });
