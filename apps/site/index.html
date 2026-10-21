@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>try{var t=localStorage.getItem("momenta-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <title>momenta — 101 figures for the moments every app has</title>
+  <meta name="description" content="101 isometric line figures for uploading, paying, signing in, matching creators and waiting on AI. One state prop, zero dependencies.">
+  <meta property="og:title" content="momenta — figures for the moments every app has">
+  <meta property="og:description" content="101 isometric line figures. One state prop. Zero dependencies.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="top"></div>
+  <main>
+    <div class="wrap">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Open source · MIT</p>
+          <h1>Figures for the moments every app has.</h1>
+          <p class="lede">Uploading, paying, typing a code, waiting on an AI reply. momenta is 101 isometric line figures that show what your app is doing, driven by one <code class="inline">state</code> prop.</p>
+          <div class="hero-cta">
+            <a class="btn primary" href="/figures">Browse the figures</a>
+            <a class="btn" href="/docs">Read the docs</a>
+          </div>
+          <div class="install-line"><span>npm i momenta</span><button class="copy" type="button" data-copy="npm i momenta">Copy</button></div>
+        </div>
+        <div class="hero-stage" aria-label="Three example figures">
+          <div class="grid3">
+            <div class="cell"><div class="stage" data-figure="Upload" data-state="loading"></div></div>
+            <div class="cell"><div class="stage" data-figure="Pay" data-state="success"></div></div>
+            <div class="cell"><div class="stage" data-figure="Write" data-state="loading"></div></div>
+          </div>
+          <div class="hero-caption"><span>Upload · loading</span><span>Pay · success</span><span>Write · loading</span></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>One prop that means something.</h2>
+            <p>Wire <code class="inline">state</code> to your app's real status, and the figure tells the story.</p>
+          </div>
+        </div>
+        <div class="features">
+          <article class="feature"><h3>Five states</h3><p>idle, loading, success, error and empty. Each one has a clear picture, and colour appears only for success and error.</p></article>
+          <article class="feature"><h3>Light and dependency-free</h3><p>No runtime dependencies. All 101 figures together are about 30 KB gzipped, and tree-shaking keeps only what you import.</p></article>
+          <article class="feature"><h3>Idle means idle</h3><p>Only loading loops. Every figure shares one animation frame that sleeps once the figures settle, so a page full of them costs almost nothing.</p></article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>Thirteen shelves, built for real screens.</h2>
+            <p>Files, communication, commerce, account, AI and data, creator platforms, media, security, productivity, devices, wellness, travel and system.</p>
+          </div>
+          <a class="btn" href="/figures">See all 101</a>
+        </div>
+        <div class="shelves" id="shelves"></div>
+      </section>
+    </div>
+  </main>
+  <div id="foot"></div>
+  <script type="module" src="/src/pages/home.ts"></script>
+</body>
+</html>

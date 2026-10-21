@@ -1,0 +1,13 @@
+{
+  "name": "momenta-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "pnpm --filter momenta-site dev",
+    "build": "pnpm --filter momenta build && pnpm --filter momenta-site build",
+    "typecheck": "pnpm --filter momenta typecheck && pnpm --filter momenta-site typecheck",
+    "test": "pnpm --filter momenta test",
+    "generate": "python3 scripts/generate.py"
+  }
+}

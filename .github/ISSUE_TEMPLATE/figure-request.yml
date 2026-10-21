@@ -1,0 +1,24 @@
+name: Figure request
+description: Ask for a figure for a moment your app has
+labels: [figure]
+body:
+  - type: input
+    id: moment
+    attributes:
+      label: The moment
+      description: The screen or step this figure belongs on.
+      placeholder: The screen after a password reset email is sent
+    validations:
+      required: true
+  - type: textarea
+    id: states
+    attributes:
+      label: The five states
+      description: One line each for idle, loading, success, error and empty.
+    validations:
+      required: true
+  - type: input
+    id: apps
+    attributes:
+      label: Who has this moment
+      description: A few products that would use it.

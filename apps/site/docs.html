@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>try{var t=localStorage.getItem("momenta-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <title>Docs · momenta</title>
+  <meta name="description" content="Install, use and customise momenta: 101 isometric line figures with one state prop, for React and everything else.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="top"></div>
+  <div class="wrap docs">
+    <nav class="side" id="side" aria-label="Documentation">
+      <h4>Getting started</h4>
+      <a href="#install">Install</a>
+      <a href="#quick-start">Quick start</a>
+      <a href="#states">States</a>
+      <a href="#empty-states">Empty states</a>
+      <h4>API</h4>
+      <a href="#react">React</a>
+      <a href="#vanilla">Vanilla</a>
+      <a href="#server">Server rendering</a>
+      <a href="#options">Options</a>
+      <h4>Reference</h4>
+      <a href="#figures">Figures</a>
+      <a href="#theme">Theme</a>
+      <a href="#accessibility">Accessibility</a>
+      <h4>Extend</h4>
+      <a href="#custom">Make your own</a>
+      <a href="#rules">Design rules</a>
+    </nav>
+
+    <article class="doc">
+      <section id="intro">
+        <p class="eyebrow">Documentation</p>
+        <h1>101 figures, one set of options.</h1>
+        <p class="lede">Every figure takes the same props and draws itself in SVG with no dependencies. Install the package, place a figure where your interface needs one, and let <span class="inline">state</span> tell it what is happening.</p>
+      </section>
+
+      <section id="install">
+        <h2>Install</h2>
+        <p>Install the package with your package manager. It is ESM only and has no runtime dependencies.</p>
+        <div class="tabs" role="tablist" aria-label="Package manager" data-tabs="pm">
+          <button role="tab" aria-selected="true" data-value="npm">npm</button>
+          <button role="tab" aria-selected="false" data-value="pnpm">pnpm</button>
+          <button role="tab" aria-selected="false" data-value="yarn">yarn</button>
+          <button role="tab" aria-selected="false" data-value="bun">bun</button>
+        </div>
+        <div class="code"><div class="code-bar"><span class="code-label">Terminal</span><button class="copy" type="button" data-copy-from="pm-command">Copy</button></div><pre><code id="pm-command">npm i momenta</code></pre></div>
+        <p style="margin-top:14px">Importing one figure bundles only that figure. The whole library is about 30 KB gzipped.</p>
+      </section>
+
+      <section id="quick-start">
+        <h2>Quick start</h2>
+        <p>A figure fills the width of its container at a 5:4 ratio. Give it a width, and it draws itself to fit.</p>
+        <div class="tabs" role="tablist" aria-label="Integration" data-tabs="qs">
+          <button role="tab" aria-selected="true" data-value="react">React</button>
+          <button role="tab" aria-selected="false" data-value="vanilla">Vanilla</button>
+          <button role="tab" aria-selected="false" data-value="cdn">CDN</button>
+        </div>
+        <div data-panel="react">
+          <div class="code"><div class="code-bar"><span class="code-label">app/page.tsx</span></div><pre><code>import { Upload } from "momenta/react";
+
+export default function Page({ uploading }: { uploading: boolean }) {
+  return &lt;Upload state={uploading ? "loading" : "idle"} style={{ width: 240 }} /&gt;;
+}</code></pre></div>
+        </div>
+        <div data-panel="vanilla" hidden>
+          <div class="code"><div class="code-bar"><span class="code-label">main.ts</span></div><pre><code>import { pay } from "momenta";
+
+const figure = pay(document.getElementById("checkout")!, { state: "loading" });
+
+figure.update({ state: "success" });  // when the payment clears
+figure.destroy();                     // when the element is removed</code></pre></div>
+        </div>
+        <div data-panel="cdn" hidden>
+          <div class="code"><div class="code-bar"><span class="code-label">index.html</span></div><pre><code>&lt;div id="figure" style="width: 240px"&gt;&lt;/div&gt;
+
+&lt;script type="module"&gt;
+  import { upload } from "https://esm.sh/momenta";
+
+  upload(document.getElementById("figure"), { state: "loading" });
+&lt;/script&gt;</code></pre></div>
+        </div>
+      </section>
+
+      <section id="states">
+        <h2>States</h2>
+        <p>Every figure supports the same five states. Wire them to the status your app already has.</p>
+        <div class="table-wrap" style="margin-top:16px">
+          <table>
+            <thead><tr><th>State</th><th>What it shows</th><th>Motion</th></tr></thead>
+            <tbody>
+              <tr><td><code>idle</code></td><td>The resting picture. The default.</td><td>Answers the pointer, then holds still.</td></tr>
+              <tr><td><code>loading</code></td><td>Work in progress.</td><td>Loops. With <code>progress</code>, it follows the value instead.</td></tr>
+              <tr><td><code>success</code></td><td>Done.</td><td>Settles in green with a tick.</td></tr>
+              <tr><td><code>error</code></td><td>Failed.</td><td>Settles in red with a cross, and shakes once.</td></tr>
+              <tr><td><code>empty</code></td><td>Nothing here yet.</td><td>Drawn as a dashed ghost.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="empty-states">
+        <h2>Empty states</h2>
+        <p>A figure works as an empty state at 160 to 240&nbsp;px wide, above a heading and one action. Its resting picture is the illustration; the pointer is a bonus.</p>
+        <div class="code" style="margin-top:16px"><div class="code-bar"><span class="code-label">no-results.tsx</span></div><pre><code>import { Search } from "momenta/react";
+
+export function NoResults({ onClear }: { onClear: () =&gt; void }) {
+  return (
+    &lt;div style={{ display: "grid", justifyItems: "center", gap: 12, padding: 48 }}&gt;
+      &lt;Search state="empty" style={{ width: 200 }} label="No results" /&gt;
+      &lt;h2&gt;No results match these filters&lt;/h2&gt;
+      &lt;button onClick={onClear}&gt;Clear filters&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre></div>
+      </section>
+
+      <section id="react">
+        <h2>React</h2>
+        <p>Import any figure from <span class="inline">momenta/react</span>. Each one renders a <span class="inline">&lt;div&gt;</span>, accepts any <span class="inline">&lt;div&gt;</span> attribute, and forwards its ref. The module is client-side, so a Server Component can render it directly.</p>
+        <pre class="signature">&lt;Upload
+  state?: "idle" | "loading" | "success" | "error" | "empty"
+  progress?: number        // 0–1, during loading
+  count?: number           // where the figure supports it
+  intensity?: number       // 0–1, pointer response
+  speed?: number           // 0–4
+  stroke?: number          // CSS pixels
+  marks?: boolean
+  interactive?: boolean
+  theme?: "auto" | "light" | "dark"
+  colors?: { plate?, hi?, edge?, mid?, lo?, ok?, err? }
+  label?: string           // or aria-label
+  play?: boolean
+  {...divProps}
+/&gt;</pre>
+      </section>
+
+      <section id="vanilla">
+        <h2>Vanilla</h2>
+        <p>Each figure is also a function named in lower case: <span class="inline">upload</span>, <span class="inline">pay</span>, <span class="inline">signIn</span>. It takes an element and options, and returns an instance.</p>
+        <pre class="signature">upload(element: HTMLElement, options?: FigureOptions): {
+  update(options: FigureOptions): void
+  destroy(): void
+}</pre>
+        <p><span class="inline">update</span> merges what you pass. A key set to <span class="inline">undefined</span> returns to its default, and a key you leave out keeps its value. <span class="inline">destroy</span> removes the drawing and its listeners.</p>
+      </section>
+
+      <section id="server">
+        <h2>Server rendering</h2>
+        <p>Render one settled frame to a string, for static exports, email, or server-side pages. Include <span class="inline">styles</span> once on the page so the colours apply.</p>
+        <div class="code" style="margin-top:14px"><div class="code-bar"><span class="code-label">server.ts</span></div><pre><code>import { renderToString, styles, receipt } from "momenta";
+
+const html = `&lt;style&gt;${styles}&lt;/style&gt;` +
+  renderToString(receipt, { state: "success" });</code></pre></div>
+      </section>
+
+      <section id="options">
+        <h2>Options</h2>
+        <p>Every figure takes the same options. Anything you leave out keeps its default.</p>
+        <div class="table-wrap" style="margin-top:16px">
+          <table>
+            <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td><code>state</code></td><td><code>idle · loading · success · error · empty</code></td><td><code>idle</code></td><td>What the figure shows.</td></tr>
+              <tr><td><code>progress</code></td><td><code>number</code> 0–1</td><td>none</td><td>Real progress during <code>loading</code>, instead of a loop. Available on the figures marked “progress”.</td></tr>
+              <tr><td><code>count</code></td><td><code>number</code></td><td>per figure</td><td>How many items the figure holds: rows, cards, coins, digits, seats. Clamped to the figure's range.</td></tr>
+              <tr><td><code>intensity</code></td><td><code>number</code> 0–1</td><td><code>0.5</code></td><td>How strongly the figure answers the pointer. Values outside 0–1 are clamped.</td></tr>
+              <tr><td><code>speed</code></td><td><code>number</code> 0–4</td><td><code>1</code></td><td>Animation speed. <code>0</code> freezes the figure.</td></tr>
+              <tr><td><code>stroke</code></td><td><code>number</code></td><td><code>1</code></td><td>Stroke width in CSS pixels, at any size.</td></tr>
+              <tr><td><code>marks</code></td><td><code>boolean</code></td><td><code>true</code></td><td>Show the tick on success and the cross on error.</td></tr>
+              <tr><td><code>interactive</code></td><td><code>boolean</code></td><td><code>true</code></td><td>Respond to the pointer at all.</td></tr>
+              <tr><td><code>colors</code></td><td><code>{ plate, hi, edge, mid, lo, ok, err }</code></td><td>theme</td><td>Colours for this figure only, on top of the theme.</td></tr>
+              <tr><td><code>theme</code></td><td><code>auto · light · dark</code></td><td><code>auto</code></td><td>Follows the page by default.</td></tr>
+              <tr><td><code>label</code></td><td><code>string</code></td><td>description</td><td>The accessible name. In React, <code>aria-label</code> does the same.</td></tr>
+              <tr><td><code>play</code></td><td><code>boolean</code></td><td><code>false</code></td><td>Cycles through every state on its own, until the pointer arrives. For landing pages.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="figures">
+        <h2>Figures</h2>
+        <p>All 101 figures, grouped into thirteen shelves. Open any figure to see every state, tune its options, and copy its code.</p>
+        <div class="shelf-list" id="shelf-list"></div>
+        <p style="margin-top:14px"><a class="btn" href="/figures">Browse every figure</a></p>
+      </section>
+
+      <section id="theme">
+        <h2>Theme</h2>
+        <p>Set these custom properties on a figure or on any element above it. Without them, a figure follows the page: light, or dark when an ancestor has the <span class="inline">dark</span> class or <span class="inline">data-theme="dark"</span>.</p>
+        <div class="table-wrap" style="margin-top:16px">
+          <table>
+            <thead><tr><th>Property</th><th>Role</th></tr></thead>
+            <tbody>
+              <tr><td><code>--momenta-plate</code></td><td>The surface each figure sits on. Plates are filled with it to hide what is behind, so set it to your background colour.</td></tr>
+              <tr><td><code>--momenta-hi</code></td><td>What is acting right now: the active object, the figure's focus.</td></tr>
+              <tr><td><code>--momenta-edge</code></td><td>Silhouettes.</td></tr>
+              <tr><td><code>--momenta-mid</code></td><td>Creases and secondary lines.</td></tr>
+              <tr><td><code>--momenta-lo</code></td><td>Guides and what recedes.</td></tr>
+              <tr><td><code>--momenta-ok</code></td><td>Success.</td></tr>
+              <tr><td><code>--momenta-err</code></td><td>Error.</td></tr>
+              <tr><td><code>--momenta-stroke</code></td><td>Stroke width in CSS pixels.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout"><strong>Colour means something.</strong> Figures use colour only for success and error. Everything else is a grey line, so a figure stays readable on any brand.</div>
+      </section>
+
+      <section id="accessibility">
+        <h2>Accessibility</h2>
+        <ul>
+          <li>Each figure is an image with a description. Replace it with <span class="inline">label</span>, or <span class="inline">aria-label</span> in React.</li>
+          <li>With <span class="inline">prefers-reduced-motion</span> set, every figure runs at 40% speed and still answers the pointer.</li>
+          <li>Colour is never the only signal: success adds a tick, and error adds a cross.</li>
+          <li>Figures do not take focus. If a figure is interactive for your product, wrap it in a focusable element and describe the action in its label.</li>
+        </ul>
+      </section>
+
+      <section id="custom">
+        <h2>Make your own</h2>
+        <p>A figure is a <span class="inline">setup</span> that creates springs, and a <span class="inline">draw</span> that describes one frame. The scene helpers handle projection, depth and tones, so a new figure matches the rest.</p>
+        <div class="code" style="margin-top:14px"><div class="code-bar"><span class="code-label">beacon.ts</span></div><pre><code>import { defineFigure } from "momenta";
+
+export const beacon = defineFigure({
+  name: "Beacon",
+  label: "A beacon on a plinth",
+  setup: ({ spring }) =&gt; ({ lift: spring(0) }),
+  draw(ctx, m) {
+    const { scene, state } = ctx;
+    const lift = m.lift.to(ctx.hover * 10).value;
+    scene.box(0, 0, 0, 80, 80, 6);
+    scene.cylinder(0, 0, 6 + lift, 14, 40, state === "loading" ? "hi" : ctx.verdict());
+    if (state === "success") scene.check(0, 0, 46 + lift, "ok", ctx.fade());
+  },
+});</code></pre></div>
+        <h3>The context</h3>
+        <div class="table-wrap" style="margin-top:10px">
+          <table>
+            <thead><tr><th>Member</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td><code>state</code></td><td>The current state.</td></tr>
+              <tr><td><code>time</code></td><td>Seconds since mount, scaled by <code>speed</code>. Reading it keeps the figure awake, so read it only while loading.</td></tr>
+              <tr><td><code>loop(period)</code></td><td>A phase from 0 to 1 that repeats. Keeps the figure awake.</td></tr>
+              <tr><td><code>progress(period)</code></td><td>The <code>progress</code> option when given, otherwise the same loop.</td></tr>
+              <tr><td><code>hover</code></td><td>0 when the pointer is away, rising toward 1 near the figure.</td></tr>
+              <tr><td><code>ground(z)</code></td><td>The pointer projected onto the plane at height <code>z</code>.</td></tr>
+              <tr><td><code>fade(seconds)</code></td><td>0 to 1 after a state change, for marks that draw in.</td></tr>
+              <tr><td><code>shake(amount)</code></td><td>A short shake when the state becomes error.</td></tr>
+              <tr><td><code>verdict(fallback)</code></td><td><code>"ok"</code> on success, <code>"err"</code> on error, otherwise the fallback tone.</td></tr>
+              <tr><td><code>count(fallback, max, min)</code></td><td>The <code>count</code> option, rounded and clamped.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="rules">
+        <h2>Design rules</h2>
+        <p>Every figure follows these rules. They are what make 101 figures read as one family.</p>
+        <ol class="rule-list" style="margin-top:12px">
+          <li>One isometric projection. The camera never moves.</li>
+          <li>One stroke weight. Bold is reserved for marks and progress.</li>
+          <li>Solids hide what is behind them.</li>
+          <li>One crease per box, and no shading.</li>
+          <li>Colour means a verdict. Green is success and red is error.</li>
+          <li>No words inside a figure.</li>
+          <li>The idle pose is drawn on purpose and holds still.</li>
+          <li>Only loading loops.</li>
+          <li>Empty is dashed.</li>
+          <li>The pointer is a bonus. A figure works without it.</li>
+        </ol>
+      </section>
+    </article>
+  </div>
+  <div id="foot"></div>
+  <script type="module" src="/src/pages/docs.ts"></script>
+</body>
+</html>
