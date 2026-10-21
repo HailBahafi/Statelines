@@ -139,18 +139,17 @@ export class Scene {
     return this.push(`<polygon class="${OUTLINE[tone]}" points="${pts}"/>`, opacity);
   }
 
-  /** A tick drawn flat on plane z, read as "done". */
-  check(cx: number, cy: number, z: number, tone: Tone = "ok", opacity?: number): this {
-    const m = (a: number, b: number) => this.point(cx + a + b, cy - a + b, z);
-    if (!this.marks || !shown(opacity)) return this;
-    return this.push(`<path class="${STROKE[tone]} w" d="M${m(-8, 0)}L${m(-3, 5)}L${m(9, -6)}"/>`, opacity);
+  /**
+   * Verdict marks are no longer drawn: success and error read from their tone and change of form.
+   * `check` and `cross` stay only so figures not yet redrawn still compile; they draw nothing.
+   */
+  check(_cx: number, _cy: number, _z: number, _tone?: Tone, _opacity?: number): this {
+    return this;
   }
 
-  /** A cross drawn flat on plane z, read as "failed". */
-  cross(cx: number, cy: number, z: number, tone: Tone = "err", opacity?: number): this {
-    const m = (a: number, b: number) => this.point(cx + a + b, cy - a + b, z);
-    if (!this.marks || !shown(opacity)) return this;
-    return this.push(`<path class="${STROKE[tone]} w" d="M${m(-6, -6)}L${m(6, 6)}M${m(-6, 6)}L${m(6, -6)}"/>`, opacity);
+  /** Draws nothing; see `check`. */
+  cross(_cx: number, _cy: number, _z: number, _tone?: Tone, _opacity?: number): this {
+    return this;
   }
 
   /** A four-pointed spark that faces the viewer, the mark of generated content. */
