@@ -1,7 +1,7 @@
 import { defineFigure } from "../../core/define";
 import { bump, clamp, lerp, nearestAngle, smoothstep } from "../../engine/math";
 import type { Scene, Tone, Vec3 } from "../../engine/scene";
-import { facing, faceArc, frontArc } from "../shapes";
+import { faceArc } from "../shapes";
 
 const TAU = Math.PI * 2;
 const K = Math.sqrt(3) / 2;
@@ -605,106 +605,385 @@ export const passport = defineFigure({
   },
 });
 
-/** A globe slowly turning, with a marker on it. Use for worldwide reach, locales and global settings. */
+/* ------------------------------------------------------------------ Globe */
+
+/** Turns vector v about the unit axis n by angle a. */
+const turnAbout = (v: Vec3, n: Vec3, a: number): Vec3 =>
+  add(add(mul(v, Math.cos(a)), mul(cross(n, v), Math.sin(a))), mul(n, dot(n, v) * (1 - Math.cos(a))));
+
+/** Continents as outlines of longitude and latitude, in degrees. */
+const LANDS: readonly (readonly [number, number])[][] = [
+  [[-125, 50], [-100, 52], [-80, 55], [-62, 46], [-78, 30], [-97, 18], [-80, 8], [-52, -4], [-38, -10], [-48, -25], [-68, -52], [-74, -22], [-80, -4], [-106, 22], [-124, 38]],
+  [[-10, 36], [-2, 48], [10, 55], [30, 60], [42, 46], [34, 32], [44, 12], [51, 11], [40, -14], [32, -32], [19, -35], [12, -6], [-6, 5], [-17, 15], [-12, 28]],
+  [[42, 46], [62, 56], [100, 70], [142, 60], [128, 40], [120, 24], [106, 10], [80, 9], [70, 24], [52, 28]],
+  [[114, -21], [130, -12], [145, -14], [153, -28], [144, -38], [116, -34]],
+];
+
+/** A globe turning with a marker. Use for worldwide reach, locales and global settings. */
 export const globe = defineFigure({
   name: "Globe",
-  label: "A globe turning with a marker",
-  offset: 0,
-  setup: () => ({}),
-  draw(ctx) {
+  label: "A desk globe turning with a marker",
+  offset: 10,
+  setup: ({ spring }) => ({ spin: spring(0.3, 50, 13), knock: spring(0, 60, 10), drop: spring(0, 80, 12) }),
+  draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const spin = state === "loading" ? ctx.time * 1.2 : 0.3;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    const R = 52;
-    scene.disc(shake, 0, 4, R, "base", { plate: true });
-    scene.polyline(faceArc(shake, 0, 4, R, 0, Math.PI * 2, 48), tone, { closed: true });
-    for (let k = -2; k <= 2; k++) {
-      const yy = (R * k) / 3;
-      const w = Math.sqrt(Math.max(0, R * R - yy * yy));
-      scene.line([shake - w, yy, 4], [shake + w, yy, 4], "faint");
+    const empty = state === "empty";
+    const R = 36, RA = R + 6, TILT = 0.41;
+    const d: Vec3 = [-Math.SQRT1_2, Math.SQRT1_2, 0], n: Vec3 = [Math.SQRT1_2, Math.SQRT1_2, 0];
+    // The stand holds the south end of the meridian arm; on error the arm is knocked over about it.
+    const knock = m.knock.to(state === "error" ? 1 : 0).value;
+    const C0: Vec3 = [0, 0, 74];
+    const A0: Vec3 = add(mul(d, Math.sin(TILT)), [0, 0, Math.cos(TILT)]);
+    const P0: Vec3 = add(mul(d, Math.cos(TILT)), [0, 0, -Math.sin(TILT)]);
+    const south = sub(C0, mul(A0, RA));
+    const lean = -0.42 * knock;
+    const A = turnAbout(A0, n, lean), P = turnAbout(P0, n, lean);
+    const C = add(add(south, turnAbout(sub(C0, south), n, lean)), [shake, 0, 0]);
+    const E2 = cross(A, P);
+    const V = unit(VIEW);
+
+    // The spin that turns the marker to face the viewer.
+    const LON = -0.35, LAT = 0.42, facingSpin = Math.atan2(dot(V, E2), dot(V, P)) - LON;
+    let spin = nearestAngle(facingSpin - 0.75 + ctx.hover * 0.7, m.spin.value);
+    if (state === "loading") {
+      spin = ctx.time * 1.3;
+      m.spin.set(spin);
     }
-    for (let k = 0; k < 4; k++) {
-      const a = spin + k * (Math.PI / 2);
-      const x = shake + R * Math.cos(a) * 0.9;
-      scene.polyline([[x, -R * 0.9, 4], [x, R * 0.9, 4]] as Vec3[], "faint");
+    if (state === "success") spin = nearestAngle(facingSpin + 0.15, m.spin.value);
+    const S = m.spin.to(spin).value;
+    const at = (lon: number, lat: number, r = R): Vec3 =>
+      add(C, mul(add(mul(add(mul(P, Math.cos(lon + S)), mul(E2, Math.sin(lon + S))), Math.cos(lat)), mul(A, Math.sin(lat))), r));
+    const seen = (p: Vec3) => dot(sub(p, C), V) > 1.5;
+    /** Draws the visible stretches of a line on the sphere. */
+    const onSphere = (pts: Vec3[], tone: Tone, style: { bold?: boolean } = {}) => {
+      let run: Vec3[] = [];
+      for (const p of [...pts, null]) {
+        if (p && seen(p)) run.push(p);
+        else {
+          if (run.length > 1) scene.polyline(run, tone, style);
+          run = [];
+        }
+      }
+    };
+
+    scene.box(0, 0, 0, 120, 120, 4, "base");
+    const stand: Tone = empty ? "ghost" : "base";
+    // The stand: a round foot, a collar and a stem up to the arm's lower end.
+    scene.cylinder(south[0], south[1], 4, 24, 5, stand);
+    scene.cylinder(south[0], south[1], 9, 9, 3, stand);
+    if (!empty) tube(scene, [south[0], south[1], 12], south, 3, 3, "base");
+
+    // The meridian arm: a flat half ring from pole to pole, split where it passes behind the ball.
+    const arm = (a0: number, a1: number): Vec3[] => {
+      const out: Vec3[] = [], inner: Vec3[] = [];
+      for (let i = 0; i <= 16; i++) {
+        const t = a0 + ((a1 - a0) * i) / 16;
+        const dir = sub(mul(A, Math.cos(t)), mul(P, Math.sin(t)));
+        out.push(add(C, mul(dir, RA + 2.5)));
+        inner.push(add(C, mul(dir, RA - 2.5)));
+      }
+      return [...out, ...inner.reverse()];
+    };
+    const depth = (t: number) => dot(sub(mul(A, Math.cos(t)), mul(P, Math.sin(t))), V);
+    let cut = Math.PI / 2;
+    for (let i = 0; i <= 60; i++) if (depth((Math.PI * i) / 60) >= 0) cut = (Math.PI * i) / 60;
+    const front = depth(0) >= 0;
+    const armTone: Tone = empty ? "ghost" : "base";
+    if (front) scene.panel(arm(cut, Math.PI), armTone);
+    else scene.panel(arm(0, cut), armTone);
+
+    // The ball.
+    const ballTone: Tone = empty ? "ghost" : ctx.verdict();
+    scene.panel(faceArc(C[0], C[1], C[2], R * 1.2247, 0, TAU, 40), ballTone);
+    if (!empty) {
+      const ring = (lat: number) => Array.from({ length: 41 }, (_, i) => at((i / 40) * TAU, lat));
+      onSphere(ring(0), state === "loading" ? "hi" : "faint", { bold: state === "loading" });
+      onSphere(ring(0.62), "faint");
+      onSphere(ring(-0.62), "faint");
+      for (let k = 0; k < 4; k++) onSphere(Array.from({ length: 21 }, (_, i) => at((k * Math.PI) / 2, -Math.PI / 2 + (Math.PI * i) / 20)), "faint");
+      for (const land of LANDS) {
+        const pts: Vec3[] = [];
+        for (let i = 0; i <= land.length; i++) {
+          const [a0, b0] = land[i % land.length]!, [a1, b1] = land[(i + 1) % land.length]!;
+          for (let s = 0; s < 3 && i < land.length; s++) pts.push(at(((a0 + ((a1 - a0) * s) / 3) * Math.PI) / 180, ((b0 + ((b1 - b0) * s) / 3) * Math.PI) / 180));
+        }
+        pts.push(pts[0]!);
+        onSphere(pts, "muted");
+      }
+      scene.polyline(faceArc(C[0], C[1], C[2], R * 1.2247, 0, TAU, 40), ballTone, { closed: true });
     }
-    const mk = spin;
-    scene.disc(shake + R * 0.55 * Math.cos(mk), R * 0.4 * Math.sin(mk), 4.1, 4, tone === "base" ? "hi" : tone, { fill: true });
-    if (state === "success") scene.check(0, 0, 4, "ok", ctx.fade());
-    if (state === "error") scene.cross(0, 0, 4, "err", ctx.fade());
+    if (front) scene.panel(arm(0, cut), armTone);
+    else scene.panel(arm(cut, Math.PI), armTone);
+    if (empty) return;
+    // Pivots at both poles.
+    tube(scene, add(C, mul(A, R - 1)), add(C, mul(A, RA + 3)), 1.6, 1.6, "base");
+
+    // The marker: a pin standing out of the ball, or fallen onto the foot on error.
+    const drop = clamp(m.drop.to(state === "error" ? 1 : 0).value);
+    const markTone: Tone = state === "loading" ? "hi" : state === "idle" ? "base" : ctx.verdict();
+    const base = at(LON, LAT), normal = unit(sub(base, C));
+    if (drop < 0.5) {
+      if (!seen(base)) return;
+      const head = add(base, mul(normal, 12));
+      if (state === "success") {
+        const t1 = unit(cross(normal, A)), t2 = cross(normal, t1);
+        scene.polyline(Array.from({ length: 16 }, (_, i) => add(base, add(mul(t1, 7 * Math.cos((i / 16) * TAU)), mul(t2, 7 * Math.sin((i / 16) * TAU))))), "ok", { closed: true, bold: true, opacity: ctx.fade() });
+      }
+      scene.line(base, head, markTone, { bold: true });
+      scene.panel(faceArc(head[0], head[1], head[2], 4.5, 0, TAU, 14), markTone);
+      return;
+    }
+    const fx = south[0] + 28, fy = south[1] + 4;
+    scene.line([fx - 6, fy - 6, 4.2], [fx + 4, fy + 4, 4.2], "err", { bold: true });
+    scene.disc(fx + 6, fy + 6, 4.2, 4, "err", { plate: true });
   },
 });
+
+/* ------------------------------------------------------------------ Train */
+
+/** One car of a train: its side profile (x forward, z up) pushed out to ±8 across, posed by `f`. */
+function railcar(scene: Scene, f: (x: number, y: number, z: number) => Vec3, profile: readonly (readonly [number, number])[],
+                 x0: number, x1: number, tone: Tone, opacity?: number): void {
+  const pts: Vec3[] = [];
+  for (const [x, z] of profile) pts.push(f(x, -8, z), f(x, 8, z));
+  // Bogies with two wheels each, under both ends.
+  if (tone !== "ghost") for (const bx of [x0 + 9, x1 - 9]) {
+    const c = f(bx, 0, 9), ax = sub(f(bx + 7, 0, 9), c), ay = sub(f(bx, 6, 9), c), az = sub(f(bx, 0, 12), c);
+    obox(scene, c, ax, ay, az, "muted", opacity);
+    for (const w of [-4, 4]) scene.polyline(Array.from({ length: 13 }, (_, i) => f(bx + w + 3 * Math.cos((i / 12) * TAU), 6.1, 8 + 3 * Math.sin((i / 12) * TAU))), "muted", { opacity });
+  }
+  scene.panel(hull(pts), tone, opacity);
+  if (tone === "ghost") return;
+  const line = crease(tone);
+  scene.panel(profile.map(([x, z]) => f(x, 8, z)), tone, opacity);
+  for (let i = 1; i < profile.length - 1; i++) {
+    const [x, z] = profile[i]!;
+    if (z > 12) scene.line(f(x, -8, z), f(x, 8, z), line, { opacity });
+  }
+  // Windows down the side and a livery stripe.
+  for (let wx = x0 + 6; wx + 6 <= x1 - 6; wx += 9) {
+    scene.polyline([f(wx, 8.1, 21), f(wx + 6, 8.1, 21), f(wx + 6, 8.1, 27), f(wx, 8.1, 27)], line, { closed: true, opacity });
+  }
+  scene.line(f(x0, 8.1, 16), f(x1, 8.1, 16), line, { opacity });
+}
+
+const LEAD: readonly (readonly [number, number])[] = [[-56, 12], [-56, 32], [-16, 32], [-6, 23], [0, 17], [0, 12]];
+const COACH: readonly (readonly [number, number])[] = [[-112, 12], [-112, 32], [-60, 32], [-60, 12]];
 
 /** A train passing along its track. Use for transit, travel progress and rail routes. */
 export const train = defineFigure({
   name: "Train",
-  label: "A train moving along a track",
-  offset: 6,
-  setup: ({ spring }) => ({ t: spring(0.2, 90, 16) }),
+  label: "A train running along a track to a platform",
+  offset: 10,
+  setup: ({ spring }) => ({ x: spring(14, 80, 16), off: spring(0, 70, 11) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const t = state === "loading" ? ctx.loop(3) : state === "success" ? 1 : state === "error" ? 0.5 : state === "empty" ? 0 : 0.2;
-    const T = m.t.to(t).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 150, 60, 4, "base");
-    scene.line([-64, -8, 4.05], [64, -8, 4.05], "faint", { bold: true });
-    scene.line([-64, 8, 4.05], [64, 8, 4.05], "faint", { bold: true });
-    const x = lerp(-56, 48, T) + shake;
-    scene.box(x, 0, 4.1, 34, 14, 12, tone);
-    scene.box(x + 12, 0, 4.1, 10, 14, 18, tone === "base" ? "muted" : tone);
-    for (let k = 0; k < 2; k++) scene.disc(x - 8 + k * 16, 0, 4.1, 3.5, "muted", { fill: true });
-    if (state === "success") scene.check(48, -22, 16, "ok", ctx.fade());
-    if (state === "error") scene.cross(48, -22, 16, "err", ctx.fade());
+    const empty = state === "empty";
+    let x = 14 + ctx.hover * 8, opacity = 1;
+    if (state === "loading") {
+      const q = ctx.loop(3.4);
+      // Runs in to the platform and pulls up; it fades low, never out, before the next run.
+      x = lerp(-8, 96, smoothstep(q / 0.8));
+      opacity = q < 0.08 ? lerp(0.3, 1, q / 0.08) : 1 - 0.7 * smoothstep((q - 0.88) / 0.12);
+      m.x.set(x);
+    }
+    if (state === "success") x = 96;
+    if (state === "error") x = 52;
+    const X = m.x.to(x).value + shake;
+    const off = m.off.to(state === "error" ? 1 : 0).value;
+
+    scene.box(0, 0, 0, 216, 70, 4, "base");
+    // The track: sleepers, then two rails.
+    for (let sx0 = -99; sx0 <= 99; sx0 += 18) scene.line([sx0, -10, 4.6], [sx0, 10, 4.6], empty ? "ghost" : "muted", { bold: true });
+    for (const y of [-5, 5]) {
+      if (empty) scene.line([-104, y, 5.5], [104, y, 5.5], "ghost");
+      else scene.box(0, y, 4, 208, 2, 3, "base");
+    }
+    // The station: a platform on the far side with a canopy on two posts.
+    const st: Tone = empty ? "ghost" : state === "success" ? "ok" : "base";
+    scene.box(68, -24, 4, 64, 16, 7, st);
+    for (const px of [46, 90]) scene.cylinder(px, -27, 11, 1.6, 22, empty ? "ghost" : "base");
+    scene.box(68, -25, 33, 70, 18, 2.5, st);
+    if (empty) {
+      railcar(scene, (a, b, c) => [14 + a, b, c], COACH, -112, -60, "ghost");
+      railcar(scene, (a, b, c) => [14 + a, b, c], LEAD, -56, 0, "ghost");
+      return;
+    }
+    const tone: Tone = state === "loading" ? "hi" : ctx.verdict();
+    /** A car's pose: yawed off the rails about its rear bogie and rolled toward the viewer on error. */
+    const pose = (pivot: number, yaw: number, roll: number, sink: number) => (a: number, b: number, c: number): Vec3 => {
+      const ex: Vec3 = [Math.cos(yaw), Math.sin(yaw), 0], ey0: Vec3 = [-Math.sin(yaw), Math.cos(yaw), 0];
+      const ey = add(mul(ey0, Math.cos(roll)), [0, 0, Math.sin(roll)]), ez = add(mul(ey0, -Math.sin(roll)), [0, 0, Math.cos(roll)]);
+      return add([X + pivot, 0, -sink], add(mul(ex, a - pivot), add(mul(ey, b), mul(ez, c))));
+    };
+    railcar(scene, pose(-100, 0.1 * off, -0.05 * off, 1.5 * off), COACH, -112, -60, tone, opacity);
+    if (!(state === "error")) {
+      // The pantograph on the coach roof.
+      const f = pose(-100, 0, 0, 0);
+      scene.polyline([f(-92, 0, 32), f(-84, 0, 40), f(-91, 0, 46)], "muted", { bold: true, opacity });
+      scene.line(f(-91, -6, 46), f(-91, 6, 46), "muted", { bold: true, opacity });
+    }
+    const lead = pose(-44, 0.34 * off, -0.22 * off, 3 * off);
+    railcar(scene, lead, LEAD, -56, 0, tone, opacity);
+    scene.polyline([lead(-14.5, -6, 30.5), lead(-7.5, -6, 23.5), lead(-7.5, 6, 23.5), lead(-14.5, 6, 30.5)], crease(tone), { closed: true, bold: true, opacity });
   },
 });
+
+/* ------------------------------------------------------------------ Compass */
 
 /** A compass needle finding north. Use for navigation, direction and onboarding to a place. */
 export const compass = defineFigure({
   name: "Compass",
-  label: "A compass needle turning north",
-  offset: 0,
-  setup: ({ spring }) => ({ needle: spring(0.8, 90, 14) }),
+  label: "A pocket compass with its needle turning north",
+  offset: 12,
+  setup: ({ spring }) => ({ needle: spring(0.5, 90, 14), loose: spring(0, 80, 11) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
-    const shake = ctx.shake(), g = ctx.ground(0);
-    let a = 0.8;
-    if (state === "idle" && ctx.pointer.over > 0.2) a = Math.atan2(g.y, g.x) + 0.2;
-    if (state === "loading") a = Math.sin(ctx.time * 3) * 1.6;
-    if (state === "success") a = 0;
-    if (state === "error") a = 2.4;
-    const A = m.needle.to(a).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.disc(shake, 0, 4, 50, "base", { plate: true });
-    scene.polyline(faceArc(shake, 0, 4, 50, 0, Math.PI * 2, 48), "muted", { closed: true });
-    for (let k = 0; k < 4; k++) scene.line([shake + 44 * Math.cos(k * Math.PI / 2), 44 * Math.sin(k * Math.PI / 2), 4], [shake + 36 * Math.cos(k * Math.PI / 2), 36 * Math.sin(k * Math.PI / 2), 4], "muted");
-    const tip: Vec3 = [shake + 34 * Math.cos(A), 34 * Math.sin(A), 4.1];
-    const tail: Vec3 = [shake - 34 * Math.cos(A), -34 * Math.sin(A), 4.1];
-    scene.polyline([tip, [shake, 0, 4.1], tail], tone, { bold: true });
-    scene.disc(shake, 0, 4.2, 3, tone, { fill: true });
-    if (state === "success") scene.check(0, -58, 4, "ok", ctx.fade());
-    if (state === "error") scene.cross(0, -58, 4, "err", ctx.fade());
+    const shake = ctx.shake(), g = ctx.ground(14);
+    const empty = state === "empty";
+    const CX = 8 + shake, CY = 8, RC = 40, TOP = 14;
+    const NORTH = -0.75 * Math.PI;
+    let a = NORTH + 0.55;
+    if (state === "idle" && ctx.pointer.over > 0.2) a = nearestAngle(Math.atan2(g.y - CY, g.x - CX), NORTH);
+    if (state === "loading") a = NORTH + Math.sin(ctx.time * 3) * 1.6;
+    if (state === "success") a = NORTH;
+    if (state === "error") a = NORTH + 2.2;
+    const Aa = m.needle.to(a).value;
+    const loose = clamp(m.loose.to(state === "error" ? 1 : 0).value, 0, 1.1);
+    const body: Tone = empty ? "ghost" : "base";
+
+    scene.box(0, 0, 0, 130, 130, 4, "base");
+    // The lid, hinged at the back and standing open, with its sighting line.
+    const w: Vec3 = [Math.SQRT1_2, -Math.SQRT1_2, 0], back: Vec3 = [-Math.SQRT1_2, -Math.SQRT1_2, 0];
+    const hinge: Vec3 = [CX + back[0] * RC, CY + back[1] * RC, TOP];
+    const psi = 1.72, RL = RC - 2;
+    const v = add(mul(back, -Math.cos(psi)), [0, 0, Math.sin(psi)]);
+    const lidC = add(hinge, mul(v, RL + 2));
+    const normal = cross(w, v);
+    const lid = (r: number, lift: number) => Array.from({ length: 33 }, (_, i) => add(add(lidC, mul(normal, lift)), add(mul(w, r * Math.cos((i / 32) * TAU)), mul(v, r * Math.sin((i / 32) * TAU)))));
+    scene.panel(lid(RL, -3), body);
+    scene.panel(lid(RL, 0), body);
+    if (!empty) {
+      scene.polyline(lid(RL - 6, 0.1), "faint", { closed: true });
+      scene.line(add(lidC, mul(v, -(RL - 8))), add(lidC, mul(v, RL - 8)), "muted");
+    }
+    // The hinge knuckle joining lid and case.
+    tube(scene, add(hinge, mul(w, -9)), add(hinge, mul(w, 9)), 2.6, 2.6, body);
+
+    // The case: a round body with a crown and a bail ring at the side.
+    scene.cylinder(CX, CY, 4, RC, TOP - 4, body);
+    if (empty) {
+      scene.polyline(Array.from({ length: 2 }, (_, i) => [CX + Math.cos(NORTH) * (i ? 30 : -30), CY + Math.sin(NORTH) * (i ? 30 : -30), TOP + 0.1] as Vec3), "ghost");
+      return;
+    }
+    const crown = add([CX, CY, 9], mul(w, RC));
+    tube(scene, crown, add(crown, mul(w, 7)), 3.2, 3.2, "base");
+    scene.polyline(faceArc(crown[0] + w[0] * 13, crown[1] + w[1] * 13, 9, 7, 0, TAU, 18), "base", { closed: true, bold: true });
+    scene.disc(CX, CY, TOP, RC - 5, "muted");
+    for (let k = 0; k < 8; k++) {
+      const t = (k * Math.PI) / 4, r0 = k % 2 ? RC - 9 : RC - 12;
+      scene.line([CX + r0 * Math.cos(t), CY + r0 * Math.sin(t), TOP + 0.05], [CX + (RC - 6) * Math.cos(t), CY + (RC - 6) * Math.sin(t), TOP + 0.05], "muted");
+    }
+    // The compass rose and the north mark.
+    const star = (r: number, rot: number): Vec3[] => Array.from({ length: 8 }, (_, i) => {
+      const t = rot + (i * Math.PI) / 4, rr = i % 2 ? r * 0.22 : r;
+      return [CX + rr * Math.cos(t), CY + rr * Math.sin(t), TOP + 0.1] as Vec3;
+    });
+    scene.panel(star(18, NORTH + Math.PI / 4), "faint");
+    scene.panel(star(26, NORTH), "faint");
+    const nTone: Tone = state === "success" ? "ok" : "muted";
+    const nx = (r: number, da = 0): Vec3 => [CX + r * Math.cos(NORTH + da), CY + r * Math.sin(NORTH + da), TOP + 0.15];
+    scene.panel([nx(RC - 7), nx(RC - 13, 0.12), nx(RC - 13, -0.12)], nTone);
+
+    // The needle: a rhombus on its pivot, north half in the verdict tone. On error it is knocked
+    // off the pivot and lies crooked against the dial.
+    const tone: Tone = state === "loading" ? "hi" : ctx.verdict();
+    const ox = CX + 9 * loose, oy = CY + 11 * loose;
+    const dir: Vec3 = [Math.cos(Aa), Math.sin(Aa), 0.16 * loose], side: Vec3 = [-Math.sin(Aa) * 4.5, Math.cos(Aa) * 4.5, 0];
+    const mid: Vec3 = [ox, oy, TOP + 3.5 - 1.5 * loose];
+    const tip = add(mid, mul(dir, 30)), tail = add(mid, mul(dir, -30));
+    scene.cylinder(CX, CY, TOP, 2.2, 3, "muted");
+    scene.panel([tail, add(mid, side), add(mid, mul(side, -1))], "muted");
+    scene.panel([tip, add(mid, side), add(mid, mul(side, -1))], tone);
+    scene.disc(mid[0], mid[1], mid[2], 2.6, tone, { fill: true });
+    // The glass: a glint, and cracks on error.
+    scene.arc(CX, CY, TOP + 4, RC - 9, Math.PI * 0.95, Math.PI * 1.25, "faint");
+    if (state === "error") {
+      const f = ctx.fade(0.4);
+      scene.polyline([[CX - 26, CY + 10, TOP + 4], [CX - 8, CY + 2, TOP + 4], [CX + 4, CY + 12, TOP + 4], [CX + 24, CY + 6, TOP + 4]], "err", { opacity: f });
+      scene.line([CX - 8, CY + 2, TOP + 4], [CX - 4, CY - 18, TOP + 4], "err", { opacity: f });
+    }
   },
 });
+
+/* ------------------------------------------------------------------ Boarding */
 
 /** A boarding pass with a QR block. Use for tickets, check-in confirmations and boarding. */
 export const boarding = defineFigure({
   name: "Boarding",
-  label: "A boarding pass being scanned",
-  offset: 6,
-  setup: ({ spring }) => ({ pass: spring(0, 160, 16) }),
+  label: "A boarding pass scanned at a gate",
+  offset: 16,
+  setup: ({ spring }) => ({ lift: spring(14, 160, 16), flap: spring(0, 80, 14), fall: spring(0, 70, 12) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
-    const x = state === "loading" ? -30 + 60 * smoothstep(ctx.loop(2.2)) : state === "success" ? 40 : state === "error" ? -40 : -30 + ctx.hover * 6;
-    const X = m.pass.to(x).value;
-    const tone = state === "error" ? "err" : state === "success" ? "ok" : state === "loading" ? "hi" : state === "empty" ? "ghost" : "base";
-    scene.box(0, 0, 0, 130, 70, 3, "base");
-    scene.box(-62, -40, 3, 8, 8, 30, "muted");
-    scene.box(X + shake, 0, 6, 74, 40, 3, tone);
-    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if ((r + c) % 2) scene.box(X - 20 + c * 6 + shake, -10 + r * 6, 8.5, 4, 4, 1, "muted");
-    if (state === "success") scene.check(44, -28, 6, "ok", ctx.fade());
-    if (state === "error") scene.cross(44, -28, 6, "err", ctx.fade());
+    const empty = state === "empty";
+    let lift = 14 - ctx.hover * 7, beam = -1;
+    if (state === "loading") {
+      const q = ctx.loop(1.6);
+      lift = 0;
+      beam = q;
+    }
+    if (state === "success") lift = 8;
+    if (state === "error") lift = 0;
+    const L = m.lift.to(lift).value;
+    const open = clamp(m.flap.to(state === "success" ? 1 : 0).value, 0, 1);
+    const fall = clamp(m.fall.to(state === "error" ? 1 : 0).value, 0, 1);
+    const body: Tone = empty ? "ghost" : "base";
+    const verdict: Tone = state === "loading" ? "hi" : state === "idle" ? "muted" : ctx.verdict("muted");
+
+    scene.box(0, 0, 0, 150, 116, 4, "base");
+    // Two gate cabinets either side of the lane.
+    const gate = (gx: number) => {
+      scene.box(gx, 0, 4, 20, 80, 44, body);
+      if (empty) return;
+      scene.line([gx + 10.05, -36, 40], [gx + 10.05, 30, 40], verdict, { bold: true });
+    };
+    // The glass flaps that close the lane; they slide back into the cabinets to let you through.
+    const flap = (fromX: number, sign: number) => {
+      const len = 32 * (1 - open) + 2;
+      obox(scene, [fromX + (sign * len) / 2, -8, 26], [len / 2, 0, 0], [0, 1.2, 0], [0, 0, 12], empty ? "ghost" : state === "error" ? "err" : "muted");
+    };
+    gate(-32);
+    flap(-22, 1);
+    flap(46, -1);
+    gate(56);
+    // The reader on the near end of the left cabinet: a raised head with its glass.
+    scene.box(-32, 24, 48, 18, 22, 3, body);
+    if (!empty) scene.rect(-39, 16, -25, 32, 51.05, beam >= 0 ? "hi" : "muted");
+
+    // The pass: a stub behind a perforation with a QR block, a header band and lines.
+    const tone: Tone = empty ? "ghost" : state === "loading" ? "base" : ctx.verdict();
+    const yaw = 0.5 * fall;
+    const c: Vec3 = [lerp(-32, -2, fall) + shake, lerp(26, 48, fall), lerp(52.5 + L, 4.8, smoothstep(fall))];
+    const ua: Vec3 = [Math.cos(yaw), Math.sin(yaw), 0], va: Vec3 = [-Math.sin(yaw), Math.cos(yaw), 0];
+    obox(scene, c, mul(ua, 12), mul(va, 25), [0, 0, 0.8], tone);
+    if (empty) return;
+    const p = (u: number, v: number): Vec3 => add(add(c, [0, 0, 0.85]), add(mul(ua, u), mul(va, v)));
+    const line = crease(tone);
+    scene.line(p(-12, 12), p(12, 12), "ghost");
+    scene.polyline([p(-6, 14.5), p(5, 14.5), p(5, 23), p(-6, 23)], line, { closed: true });
+    for (const [u, v] of [[-4, 16.5], [3, 16.5], [-4, 21]] as const) scene.polyline([p(u - 1.2, v - 1.2), p(u + 1.2, v - 1.2), p(u + 1.2, v + 1.2), p(u - 1.2, v + 1.2)], line, { closed: true });
+    scene.line(p(-12, -19), p(12, -19), tone === "base" ? "muted" : tone, { bold: true });
+    for (const [v, u1] of [[-12, 8], [-6, 3], [0, 8], [6, -1]] as const) scene.line(p(-8, v), p(u1, v), line);
+    // A small plane mark beside the route line.
+    scene.line(p(4, -13.5), p(10, -9.5), line, { bold: true });
+    scene.line(p(8.2, -13.5), p(5, -9), line);
+    if (beam >= 0) {
+      const bv = lerp(-25, 25, beam);
+      scene.line(p(-14, bv), p(14, bv), "hi", { bold: true });
+    }
   },
 });
