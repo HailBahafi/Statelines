@@ -526,62 +526,62 @@ export const luggage = defineFigure({
 /** A passport with its stamp pressed. Use for identity, verification of travel documents, and entry. */
 export const passport = defineFigure({
   name: "Passport",
-  label: "An open passport and a rubber stamp",
-  offset: 12,
-  setup: ({ spring }) => ({ stamp: spring(30, 170, 15), tip: spring(0, 60, 11), ink: spring(0, 120, 16) }),
+  label: "An open passport, photo page and visa page, with a rubber stamp landing",
+  offset: 10,
+  setup: ({ spring }) => ({ stamp: spring(34, 170, 15), tip: spring(0, 60, 11), ink: spring(0, 120, 16) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
     const empty = state === "empty";
-    let z = 30 - ctx.hover * 10;
+    let z = 34 - ctx.hover * 10;
     if (state === "loading") {
       const q = ctx.loop(1.3);
-      z = 30 * (1 - bump(clamp((q - 0.35) / 0.4)));
+      z = 34 * (1 - bump(clamp((q - 0.35) / 0.4)));
       m.stamp.set(z);
     }
-    if (state === "success") z = 38;
+    if (state === "success") z = 40;
     if (state === "error") z = 0;
     const Z = Math.max(0, m.stamp.to(z).value);
     const fall = clamp(m.tip.to(state === "error" ? 1 : 0).value, 0, 1.04);
     const ink = clamp(m.ink.to(state === "success" ? 1 : 0).value);
     const paper: Tone = empty ? "ghost" : "base";
-    const top = 9.05, IX = 18, IY = 26;
+    const top = 10.05, IX = 34, IY = -2;
 
-    scene.box(0, 0, 0, 164, 128, 4, "base");
-    // The ink pad: a flat tin with the pad inside.
-    scene.box(-62, 36, 4, 22, 30, 5, paper);
-    if (!empty) scene.rect(-70, 24, -54, 48, 9.05, "muted");
-
-    // The open passport: cover, the data page beyond the spine and the visa page in front.
-    scene.box(6, 0, 4, 88, 116, 2, empty ? "ghost" : "muted");
-    scene.box(6, -27.5, 6, 82, 53, 3, paper);
-    scene.box(6, 27.5, 6, 82, 53, 3, paper);
+    scene.box(0, 0, 0, 172, 128, 4, "base");
+    // The open passport: the cover showing round the edges, the photo page on the left, the visa page on the right.
+    scene.box(0, 0, 4, 158, 112, 2.5, empty ? "ghost" : "muted");
+    scene.box(-38, 0, 6.5, 74, 104, 3.5, paper);
+    scene.box(38, 0, 6.5, 74, 104, 3.5, paper);
     if (!empty) {
-      scene.line([-35, 0, top], [47, 0, top], "muted");
-      // The data page: a portrait photo, lines of details and the machine-readable strip.
-      scene.rect(-30, -50, -10, -24, top, "muted");
-      scene.disc(-20, -41, top, 4, "faint");
-      scene.arc(-20, -31, top, 7.5, Math.PI * 1.1, Math.PI * 1.9, "faint");
-      for (let k = 0; k < 3; k++) scene.line([-4, -48 + k * 7, top], [k === 2 ? 18 : 38, -48 + k * 7, top], "faint");
-      scene.line([-30, -15, top], [42, -15, top], "faint", { bold: true });
-      scene.line([-30, -9, top], [42, -9, top], "faint", { bold: true });
-      // An old entry stamp on the visa page.
-      scene.rect(-30, 32, -10, 50, top, "faint");
-      scene.line([-26, 41, top], [-14, 41, top], "faint");
+      // Page edges along the front, and the spine.
+      for (const x0 of [-75, 1]) scene.line([x0, 52.05, 8.2], [x0 + 74, 52.05, 8.2], "faint");
+      scene.line([0, -52, top], [0, 52, top], "muted", { bold: true });
+      // The photo page: portrait, name lines, and the machine-readable strip at the foot.
+      scene.rect(-68, -44, -44, -10, top, "muted");
+      scene.disc(-56, -32, top, 5, "muted");
+      scene.arc(-56, -18, top, 9.5, Math.PI * 1.08, Math.PI * 1.92, "muted");
+      for (let k = 0; k < 4; k++) scene.line([-36, -42 + k * 9, top], [k === 3 ? -20 : -8, -42 + k * 9, top], "faint", { bold: k === 0 });
+      scene.line([-68, 30, top], [-8, 30, top], "muted", { bold: true });
+      scene.line([-68, 39, top], [-8, 39, top], "muted", { bold: true });
+      // Older entry stamps on the visa page.
+      scene.disc(56, -32, top, 11, "faint");
+      scene.disc(56, -32, top, 7.5, "faint");
+      scene.rect(14, 26, 40, 42, top, "faint");
+      scene.line([18, 34, top], [36, 34, top], "faint");
     }
 
-    // The fresh imprint, where the stamp came down.
+    // The fresh imprint where the stamp came down: a ringed entry mark.
     if (!empty && ink > 0.02) {
-      scene.disc(IX, IY, top, 13, "ok", { opacity: ink });
-      scene.disc(IX, IY, top, 9.5, "ok", { opacity: ink });
-      scene.line([IX - 6, IY - 2, top], [IX + 6, IY - 2, top], "ok", { opacity: ink, bold: true });
-      scene.line([IX - 4, IY + 3, top], [IX + 4, IY + 3, top], "ok", { opacity: ink });
+      scene.disc(IX, IY, top, 16, "ok", { opacity: ink });
+      scene.disc(IX, IY, top, 12, "ok", { opacity: ink });
+      scene.line([IX - 8, IY - 3, top], [IX + 8, IY - 3, top], "ok", { opacity: ink, bold: true });
+      scene.line([IX - 5, IY + 3, top], [IX + 5, IY + 3, top], "ok", { opacity: ink });
     }
     if (state === "error") {
       // A smeared half print where it slipped.
       const f = ctx.fade(0.5);
-      scene.arc(IX, IY, top, 13, Math.PI * 0.55, Math.PI * 1.45, "err", { opacity: f });
-      scene.polyline([[IX - 6, IY - 2, top], [IX + 8, IY - 8, top], [IX + 20, IY - 16, top]], "err", { bold: true, opacity: f });
+      scene.arc(IX, IY, top, 16, Math.PI * 0.55, Math.PI * 1.45, "err", { opacity: f });
+      scene.polyline([[IX - 8, IY - 2, top], [IX + 8, IY - 10, top], [IX + 24, IY - 20, top]], "err", { bold: true, opacity: f });
     }
 
     // The rubber stamp: rubber, block, neck and knob, square to the viewer. On error it topples to
@@ -589,19 +589,20 @@ export const passport = defineFigure({
     const tone = toneOf(state);
     const side: Vec3 = [Math.SQRT1_2, -Math.SQRT1_2, 0], fwd: Vec3 = [Math.SQRT1_2, Math.SQRT1_2, 0];
     const t = fall * 1.85, ct = Math.cos(t), st = Math.sin(t);
-    const pivot: Vec3 = add([IX + shake, IY, top + Z + 3 * clamp(fall)], mul(side, 16));
+    const pivot: Vec3 = add([IX + shake, IY, top + Z + 4 * clamp(fall)], mul(side, 21));
     const P = (a: number, b: number, h: number): Vec3 =>
-      add(pivot, add(add(mul(side, (a - 16) * ct + h * st), mul(fwd, b)), [0, 0, h * ct - (a - 16) * st]));
+      add(pivot, add(add(mul(side, (a - 21) * ct + h * st), mul(fwd, b)), [0, 0, h * ct - (a - 21) * st]));
     const A = (a: number, h: number): Vec3 => add(mul(side, a * ct + h * st), [0, 0, h * ct - a * st]);
     if (empty) {
-      obox(scene, P(0, 0, 6), A(16, 0), mul(fwd, 11), A(0, 6), "ghost");
+      obox(scene, P(0, 0, 8), A(21, 0), mul(fwd, 14), A(0, 8), "ghost");
       return;
     }
-    obox(scene, P(0, 0, 1.2), A(15, 0), mul(fwd, 10), A(0, 1.2), state === "loading" ? "hi" : "muted");
-    obox(scene, P(0, 0, 7.4), A(16, 0), mul(fwd, 11), A(0, 5), tone);
-    tube(scene, P(0, 0, 12.4), P(0, 0, 20), 4, 3.6, tone);
-    tube(scene, P(0, 0, 20), P(0, 0, 24), 7.5, 9, tone);
-    tube(scene, P(0, 0, 24), P(0, 0, 29), 9, 5, tone);
+    if (Z > 2 && fall < 0.05 && state !== "success") scene.disc(IX + 3, IY + 3, top, 16, "faint", { fill: true, opacity: 0.5 });
+    obox(scene, P(0, 0, 1.6), A(19.5, 0), mul(fwd, 13), A(0, 1.6), state === "loading" ? "hi" : "muted");
+    obox(scene, P(0, 0, 9.6), A(21, 0), mul(fwd, 14), A(0, 6.5), tone);
+    tube(scene, P(0, 0, 16), P(0, 0, 26), 5.2, 4.6, tone);
+    tube(scene, P(0, 0, 26), P(0, 0, 31), 9.8, 11.7, tone);
+    tube(scene, P(0, 0, 31), P(0, 0, 37.5), 11.7, 6.5, tone);
   },
 });
 

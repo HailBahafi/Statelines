@@ -1,5 +1,5 @@
 import { defineFigure } from "../../core/define";
-import { clamp, falloff, lerp, smoothstep } from "../../engine/math";
+import { clamp, lerp, smoothstep } from "../../engine/math";
 import type { Scene, Tone, Vec3 } from "../../engine/scene";
 import { faceArc, facing, frontArc } from "../shapes";
 
@@ -158,140 +158,213 @@ export const clap = defineFigure({
   },
 });
 
-/** The waveform runs along x inside a shallow track; a ruler marks time along its back rim. */
-const WAVE = { n: 24, span: 150 };
-const waveHeight = (i: number) => 9 + 30 * Math.abs(Math.sin(i * 1.3)) * (0.55 + 0.45 * Math.sin(i * 0.37 + 0.4) ** 2);
+/** The recorder: a phone standing square to the viewer; (u, v) run across and up its face in pixels. */
+const REC = { a: 44, b: 76, r: 13, t: 3.5 };
+/** The waveform's bars across the screen, mirrored about the line v. */
+const WAVE = { n: 19, l: -33, r: 33, v: 86 };
+const waveHeight = (i: number) => 2.5 + 19 * Math.abs(Math.sin(i * 1.3)) * (0.45 + 0.55 * Math.sin(i * 0.37 + 0.4) ** 2);
 
-/** A waveform with a playhead. Use for audio, podcasts, voice notes and sound levels. */
+/** A rounded rectangle centred on (cu, cv) with half sizes a and b, clockwise from the top right, in (u, v). */
+function roundRect(cu: number, cv: number, a: number, b: number, r: number, steps = 3): [number, number][] {
+  const out: [number, number][] = [];
+  const corners: [number, number, number][] = [[a - r, b - r, Math.PI / 2], [a - r, -b + r, 0], [-a + r, -b + r, -Math.PI / 2], [-a + r, b - r, Math.PI]];
+  for (const [x, y, a0] of corners) for (let i = 0; i <= steps; i++) {
+    const t = a0 - (Math.PI / 2) * (i / steps);
+    out.push([cu + x + r * Math.cos(t), cv + y + r * Math.sin(t)]);
+  }
+  return out;
+}
+
+/** A voice recorder with a waveform and a record button. Use for audio, podcasts, voice notes and sound levels. */
 export const waveform = defineFigure({
   name: "Waveform",
-  label: "A waveform with a moving playhead",
-  offset: 10,
+  label: "A voice recorder showing a waveform with a playhead and a record button",
+  offset: 22,
   setup: ({ spring }) => ({
     heights: Array.from({ length: WAVE.n }, (_, i) => spring(waveHeight(i), 160, 16)),
-    head: spring(WAVE.n * 0.4, 120, 18),
+    head: spring(0.45, 120, 18),
+    stop: spring(0, 180, 18),
   }),
   draw(ctx, m) {
     const { scene, state } = ctx;
-    const shake = ctx.shake(), g = ctx.ground(4);
-    const { n: N, span } = WAVE, pitch = span / N, bar = (i: number) => -span / 2 + pitch * (i + 0.5);
-    const empty = state === "empty";
-    let head = N * 0.4;
-    if (state === "loading") { head = ctx.loop(2.8) * N; m.head.set(head); }
-    if (state === "success") head = N;
-    if (state === "error") head = N * 0.55;
+    const shake = ctx.shake(), empty = state === "empty";
+    const N = WAVE.n, pitch = (WAVE.r - WAVE.l) / N, bu = (i: number) => WAVE.l + pitch * (i + 0.5);
+    // Recording scrolls the wave to the left past a fixed playhead; elsewhere the head sits on a finished take.
+    let head = 0.45, scroll = 0;
+    if (state === "loading") { head = 0.72; scroll = Math.floor(ctx.time * 7); m.head.set(head); }
+    if (state === "success") head = 1;
+    if (state === "error") head = 0.55;
     if (state === "empty") head = 0;
-    if (state === "idle") head += ctx.hover * clamp((g.x + span / 2) / pitch - head, -4, 4);
-    const H = m.head.to(head).value;
-    const stopped = state === "error";
-    const hx = -span / 2 + clamp(H / N) * span;
-    const ht: Tone = state === "loading" ? "hi" : state === "idle" ? "base" : ctx.verdict();
+    if (state === "idle") head += ctx.hover * clamp((ctx.pointer.x - WAVE.l) / (WAVE.r - WAVE.l) - head, -0.3, 0.3);
+    const H = clamp(m.head.to(head).value);
+    const S = clamp(m.stop.to(state === "loading" ? 1 : 0).value);
+    const at = (u: number, v: number, d = 0): Vec3 => { const p = facing(shake * 0.6, 0, 4, u, v); return [p[0] + d, p[1] + d, p[2]]; };
+    const shape = (pts: [number, number][], d: number): Vec3[] => pts.map(([u, v]) => at(u, v, d));
 
-    // The track: a deck with a raised back rim carrying the time ruler.
-    scene.box(0, 0, 0, span + 22, 60, 4, "base");
-    scene.box(0, -22, 4, span + 10, 6, 6, empty ? "ghost" : "base");
-    if (!empty) {
-      for (let k = 0; k <= 8; k++) {
-        const x = -span / 2 + (span * k) / 8;
-        scene.line([x, -24, 10.05], [x, k % 2 ? -22 : -20, 10.05], "muted");
-      }
+    scene.box(0, 0, 0, 104, 104, 4, "base");
+    // The body: its back layer, then the face, the screen's edge, the speaker slot and the camera.
+    const body = roundRect(0, REC.b, REC.a, REC.b, REC.r);
+    if (empty) {
+      scene.panel(shape(body, 0), "ghost");
+      scene.line(at(WAVE.l, WAVE.v, 0.1), at(WAVE.r, WAVE.v, 0.1), "ghost");
+      scene.polyline(faceArc(...at(0, 30, 0.1), 11, 0, TAU, 20), "ghost");
+      return;
     }
-    if (!empty) scene.line([hx, -19, 4.05], [hx, 20, 4.05], ht);
+    scene.panel(shape(body, -REC.t), "base");
+    scene.panel(shape(body, 0), "base");
+    scene.polyline(shape(roundRect(0, REC.b + 2, REC.a - 5, REC.b - 9, REC.r - 5), 0.05), "faint", { closed: true });
+    scene.line(at(-9, 2 * REC.b - 4.5, 0.05), at(9, 2 * REC.b - 4.5, 0.05), "muted", { bold: true });
+
+    // The timer at the top: a bold line that grows while recording.
+    const live = state === "loading";
+    const ink: Tone = live ? "hi" : state === "idle" ? "muted" : ctx.verdict("muted");
+    scene.line(at(-16, 130, 0.1), at(live ? -16 + 32 * (0.5 + 0.5 * ((scroll % 20) / 20)) : 16, 130, 0.1), ink, { bold: true });
+    scene.line(at(WAVE.l, 116, 0.1), at(WAVE.r, 116, 0.1), "faint");
+    scene.line(at(WAVE.l, 56, 0.1), at(WAVE.r, 56, 0.1), "faint");
+
+    // The waveform: bars mirrored about the centre line; those past the playhead are still to come.
+    const hu = lerp(WAVE.l, WAVE.r, H);
     for (let i = 0; i < N; i++) {
-      const base = waveHeight(i), after = i >= H;
-      let h = base;
-      if (state === "loading") h = base * (i < H ? 1 : 0.55 + 0.25 * Math.abs(Math.sin(ctx.time * 3 + i)));
-      if (state === "idle") h += 7 * ctx.hover * falloff(bar(i) - g.x, 12);
-      if (stopped && after) h = 1.2;
-      if (empty) h = 1;
-      const Hh = m.heights[i]!.to(h).value;
-      const tone: Tone = empty ? "ghost" : stopped && after ? "err" : !after ? (state === "success" ? "ok" : state === "loading" ? "hi" : "base") : "muted";
-      scene.box(bar(i) + (stopped && after ? shake * 0.4 : 0), 2, 4, pitch * 0.6, pitch * 0.6, Math.max(0.5, Hh), tone);
+      const done = bu(i) <= hu + 0.5;
+      let h = waveHeight(i);
+      if (live) {
+        h = done ? waveHeight(i + scroll) : 0.6;
+        m.heights[i]!.set(h);
+      }
+      if (state === "error" && !done) h = 0.6;
+      if (state === "idle" && !done) h *= 0.85;
+      const Hh = Math.max(0.6, m.heights[i]!.to(h).value);
+      const tone: Tone = !done ? (state === "error" ? "err" : "faint")
+        : live ? (bu(i) > hu - pitch * 3 ? "hi" : "base") : state === "idle" ? "base" : ctx.verdict();
+      scene.line(at(bu(i), WAVE.v - Hh, 0.1), at(bu(i), WAVE.v + Hh, 0.1), tone, { bold: true });
     }
-    if (empty) return;
-    // The playhead: a pin standing at the front of the track with a cap on top.
-    scene.box(hx, 20, 4, 2.5, 2.5, 46, ht);
-    scene.panel([facing(hx, 20, 56, -6, 5), facing(hx, 20, 56, 6, 5), facing(hx, 20, 56, 0, -5)], ht);
+    if (state === "error") scene.line(at(hu, WAVE.v, 0.1), at(WAVE.r, WAVE.v, 0.1), "err", { bold: true, opacity: ctx.fade(0.4) });
+    // The playhead: a line through the wave with a knob on top.
+    const pt: Tone = live ? "hi" : state === "idle" ? "base" : ctx.verdict();
+    scene.line(at(hu, 60, 0.15), at(hu, 110, 0.15), pt);
+    scene.panel(faceArc(...at(hu, 112, 0.15), 3, 0, TAU, 10), pt);
+
+    // The record button in its ring: a round dot, a rounded square while recording, a play arrow once saved.
+    const bt: Tone = live ? "hi" : state === "error" ? "err" : "base";
+    scene.polyline(faceArc(...at(0, 30, 0.05), 14, 0, TAU, 24), "muted");
+    if (state === "success") {
+      const tri: [number, number][] = [[-5, -8], [9, 0], [-5, 8]];
+      scene.panel(tri.map(([u, v]) => at(u, 30 + v, -1.2)), bt);
+      scene.panel(tri.map(([u, v]) => at(u, 30 + v, 0.2)), bt);
+    } else {
+      const dot = Array.from({ length: 24 }, (_, k): [number, number] => {
+        const a = (k / 24) * TAU, c = Math.cos(a), s = Math.sin(a);
+        const sq = 7 / Math.max(Math.abs(c), Math.abs(s)) ** 0.35;
+        const r = lerp(10, Math.min(sq, 8.6), S);
+        return [r * c, 30 + r * s];
+      });
+      scene.panel(shape(dot, -1.5), bt);
+      scene.panel(shape(dot, 0.2), bt);
+    }
   },
 });
 
-/** One print, lying flat: a white border with a thicker strip at the front, a picture inside. */
-function print(scene: Scene,
-  o: Vec3, U: Vec3, V: Vec3, w: number, tone: Tone, picture: "full" | "torn" | "none", bold = false): void {
-  const d = w * 1.18;
-  const P = (a: number, b: number, lift = 0): Vec3 =>
-    [o[0] + a * U[0] + b * V[0], o[1] + a * U[1] + b * V[1], o[2] + a * U[2] + b * V[2] + lift];
-  scene.panel([P(-w / 2, -d / 2), P(w / 2, -d / 2), P(w / 2, d / 2), P(-w / 2, d / 2)], tone);
-  scene.panel([P(-w / 2, -d / 2, 2), P(w / 2, -d / 2, 2), P(w / 2, d / 2, 2), P(-w / 2, d / 2, 2)], tone);
-  if (tone === "ghost" || picture === "none") return;
-  // The picture window: margins on three sides, the wide strip at the bottom (b = -d/2).
-  const a0 = -w / 2 + 3, a1 = w / 2 - 3, b0 = -d / 2 + w * 0.3, b1 = d / 2 - 3, z = 2.05;
-  const inner: Tone = tone === "base" ? "muted" : tone;
-  scene.polyline([P(a0, b0, z), P(a1, b0, z), P(a1, b1, z), P(a0, b1, z)], inner, { closed: true });
-  const t = (fa: number, fb: number): Vec3 => P(lerp(a0, a1, fa), lerp(b0, b1, fb), z + 0.05);
-  if (picture === "torn") {
-    scene.polyline([t(0, 0.75), t(0.25, 0.5), t(0.45, 0.68), t(0.7, 0.35), t(1, 0.5)], "err", { bold: true });
-    return;
+/** The gallery wall stands square to the viewer on the plate's diagonal; (u, v) run across and up it in pixels. */
+const WALL = { a: 114, h: 124, t: 4, top: 110, bottom: 20 };
+/** How a frame sits: its centre, size, scale, turn about its nail, how far it stands out, and its drop. */
+interface Hang { cu: number; cv: number; w: number; h: number; s: number; rot: number; d: number; drop: number }
+
+/** One framed photo: frame, mat and a picture of hills under a sun; `crack` breaks its glass. */
+function frame(scene: Scene, f: Hang, tone: Tone, crack = 0): void {
+  const nail: [number, number] = [f.cu, f.cv + f.h / 2];
+  const c = Math.cos(f.rot), s = Math.sin(f.rot);
+  const P = (u: number, v: number, d = 0): Vec3 => {
+    const du = (u - nail[0]) * f.s, dv = (v - nail[1]) * f.s;
+    const p = facing(0, 0, 4, nail[0] + du * c - dv * s, nail[1] + du * s + dv * c - f.drop);
+    return [p[0] + f.d + d, p[1] + f.d + d, p[2]];
+  };
+  const box = (inset: number, d: number): Vec3[] => {
+    const a = f.w / 2 - inset, b = f.h / 2 - inset;
+    return [P(f.cu - a, f.cv - b, d), P(f.cu + a, f.cv - b, d), P(f.cu + a, f.cv + b, d), P(f.cu - a, f.cv + b, d)];
+  };
+  if (tone === "ghost") { scene.panel(box(0, 0), "ghost"); return; }
+  scene.panel(box(0, -3), tone);
+  scene.panel(box(0, 0), tone);
+  const ink: Tone = tone === "base" ? "muted" : tone;
+  scene.polyline(box(4, 0.05), ink, { closed: true });
+  // The picture inside the mat: a ridge of hills and the sun.
+  const a = f.w / 2 - 8, b = f.h / 2 - 8;
+  const q = (x: number, y: number): Vec3 => P(f.cu + a * x, f.cv + b * y, 0.1);
+  scene.polyline([q(-1, -0.45), q(-0.45, 0.25), q(-0.1, -0.2), q(0.35, 0.45), q(1, -0.35)], ink);
+  scene.polyline(Array.from({ length: 11 }, (_, k) => {
+    const t = (k / 10) * TAU, r = Math.min(a, b) * 0.22;
+    return P(f.cu + a * 0.55 + r * Math.cos(t), f.cv + b * 0.55 + r * Math.sin(t), 0.1);
+  }), ink);
+  if (crack > 0.02) {
+    scene.polyline([q(-0.9, 0.8), q(-0.35, 0.2), q(-0.05, 0.45), q(0.3, -0.2), q(0.75, -0.85)], "err", { bold: true, opacity: crack });
   }
-  scene.polyline([t(0, 0.2), t(0.32, 0.62), t(0.52, 0.36), t(0.72, 0.58), t(1, 0.25)], inner, { bold });
-  scene.polyline(Array.from({ length: 9 }, (_, k) => {
-    const a = (k / 8) * TAU;
-    return P(lerp(a0, a1, 0.74) + 2.4 * Math.cos(a), lerp(b0, b1, 0.8) + 2.4 * Math.sin(a), z + 0.05);
-  }), inner);
 }
 
-/** Photos spread into a grid, and one is picked. Use for galleries, photo uploads and media libraries. `count`: photos, 2–9. */
+/** Framed photos on a wall, and one is picked. Use for galleries, photo uploads and media libraries. `count`: photos, 2–9. */
 export const gallery = defineFigure({
   name: "Gallery",
-  label: "Photos fanned into a grid with one picked",
-  offset: 14,
-  setup: ({ spring }) => ({ spread: spring(1, 130, 18), pick: spring(0, 150, 18), lift: spring(0, 160, 18) }),
+  label: "Framed photos hanging on a wall, one picked",
+  offset: 10,
+  setup: ({ spring }) => ({ pick: spring(0, 150, 18), lift: spring(0, 160, 18), fall: spring(0, 90, 12) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
-    const shake = ctx.shake(), g = ctx.ground(6);
-    const n = ctx.count(6, 9, 2), cols = n <= 4 ? 2 : 3, rows = Math.ceil(n / cols), gap = 7;
-    const w = cols === 2 ? 34 : 30, d = w * 1.18;
-    const totalW = w * cols + gap * (cols - 1), totalD = d * rows + gap * (rows - 1);
+    const shake = ctx.shake();
+    const n = ctx.count(6, 9, 2), cols = n <= 4 ? 2 : 3, rows = Math.ceil(n / cols);
+    const gu = 14, gv = rows === 3 ? 8 : 12;
+    const w = cols === 2 ? 70 : 54, h = Math.min(56, (WALL.top - WALL.bottom - gv * (rows - 1)) / rows);
+    const totalW = w * cols + gu * (cols - 1), totalH = h * rows + gv * (rows - 1);
+    const mid = (WALL.top + WALL.bottom) / 2;
     const at = (k: number): [number, number] => {
       const c = k % cols, r = Math.floor(k / cols);
-      return [-totalW / 2 + c * (w + gap) + w / 2, -totalD / 2 + r * (d + gap) + d / 2];
+      // The last row is centred when it is short.
+      const inRow = r === rows - 1 ? n - cols * (rows - 1) : cols;
+      const rowW = w * inRow + gu * (inRow - 1);
+      return [-rowW / 2 + c * (w + gu) + w / 2, mid + totalH / 2 - r * (h + gv) - h / 2];
     };
     const empty = state === "empty";
-    const spread = m.spread.to(empty ? 0 : 1).value;
     let picked = -1;
-    if (state === "idle") picked = clamp(Math.floor((g.x / totalW + 0.5) * cols), 0, cols - 1) + cols * clamp(Math.floor((g.y / totalD + 0.5) * rows), 0, rows - 1);
+    if (state === "idle") {
+      const v = -ctx.pointer.y - 4;
+      picked = clamp(Math.floor((ctx.pointer.x + totalW / 2) / (w + gu)), 0, cols - 1) + cols * clamp(Math.floor((mid + totalH / 2 - v) / (h + gv)), 0, rows - 1);
+    }
     if (state === "loading") picked = Math.floor(ctx.loop(2.4) * n) % n;
     if (state === "success" || state === "error") picked = Math.min(n - 1, cols + 1 < n ? cols + 1 : 0);
     picked = Math.min(picked, n - 1);
-    const P = m.pick.to(state === "success" ? 1 : state === "error" ? -1 : 0).value;
-    const L = m.lift.to(state === "loading" ? 1 : state === "idle" ? 0.4 + ctx.hover * 0.6 : 0).value;
+    const P = clamp(m.pick.to(state === "success" ? 1 : 0).value, 0, 1.2);
+    const L = m.lift.to(state === "loading" ? 1 : state === "idle" ? ctx.hover : 0).value;
+    const D = clamp(m.fall.to(state === "error" ? 1 : 0).value, 0, 1.1);
 
-    scene.box(0, 0, 0, totalW + 26, totalD + 26, 4, "base");
-    const flatU: Vec3 = [1, 0, 0], flatV: Vec3 = [0, -1, 0];
+    // The floor and the wall, with a picture rail near the top and a skirting board at the foot.
+    scene.box(4, 4, 0, 134, 134, 4, "base");
+    const W = (u: number, v: number, d = 0): Vec3 => { const p = facing(0, 0, 4, u, v); return [p[0] + d, p[1] + d, p[2]]; };
+    const wall = (d: number) => [W(-WALL.a, 0, d), W(WALL.a, 0, d), W(WALL.a, WALL.h, d), W(-WALL.a, WALL.h, d)];
     if (empty) {
-      for (let k = 0; k < n; k++) { const [x, y] = at(k); scene.rect(x - w / 2, y - d / 2, x + w / 2, y + d / 2, 4.05, "ghost"); }
+      scene.panel(wall(0), "ghost");
+      for (let k = 0; k < n; k++) { const [cu, cv] = at(k); frame(scene, { cu, cv, w, h, s: 1, rot: 0, d: 0.2, drop: 0 }, "ghost"); }
       return;
     }
+    scene.panel(wall(-WALL.t), "base");
+    scene.panel(wall(0), "base");
+    scene.line(W(-WALL.a, WALL.h - 8, 0.05), W(WALL.a, WALL.h - 8, 0.05), "faint");
+    scene.line(W(-WALL.a, 8, 0.05), W(WALL.a, 8, 0.05), "muted");
+
     for (let k = 0; k < n; k++) {
-      if (k === picked && (state === "success" || state === "error" || L > 0.05)) continue;
-      const [x, y] = at(k);
-      print(scene, [x * spread, y * spread, 4], flatU, flatV, w, "base", "full");
-    }
-    if (picked < 0) return;
-    const [px, py] = at(picked);
-    if (state === "success" || (state !== "error" && P > 0.02)) {
-      // Picked: it lifts and stands up toward the viewer, a size larger.
-      const t = clamp(P), th = t * 1.15, s = 1 + t * 0.35;
-      const V: Vec3 = [0, -Math.cos(th) * s, Math.sin(th) * s], U: Vec3 = [s, 0, 0];
-      print(scene, [px, py + t * 14, 4 + t * 26 + L * 10], U, V, w, state === "success" ? "ok" : "base", "full", true);
-    } else if (state === "error" || P < -0.02) {
-      // Failed: it slides off the grid at an angle and its picture is torn.
-      const t = clamp(-P), a = t * 0.5;
-      const U: Vec3 = [Math.cos(a), Math.sin(a), 0], V: Vec3 = [Math.sin(a), -Math.cos(a), 0];
-      print(scene, [px + shake + t * (totalW / 2 + 10 - px), py + t * 6, 4], U, V, w, "err", "torn");
-    } else {
-      const tone: Tone = state === "loading" ? "hi" : "base";
-      print(scene, [px, py, 4 + L * 12], flatU, flatV, w, tone, "full");
+      const [cu, cv] = at(k);
+      const hang: Hang = { cu, cv, w, h, s: 1, rot: 0, d: 0.2, drop: 0 };
+      if (k !== picked) { frame(scene, hang, "base"); continue; }
+      if (state === "error" || D > 0.02) {
+        // It slips off its nail, turns, drops to the floor and leans there with its glass cracked.
+        const t = clamp(D);
+        scene.polyline([W(cu - w / 2, cv - h / 2, 0.05), W(cu + w / 2, cv - h / 2, 0.05), W(cu + w / 2, cv + h / 2, 0.05), W(cu - w / 2, cv + h / 2, 0.05)], "faint", { closed: true, opacity: t });
+        scene.disc(...W(cu, cv + h / 2 + 3, 0.3), 1.2, "muted", { fill: true });
+        const floor = cv - h / 2 - 2;
+        frame(scene, { ...hang, cu: cu + shake, rot: -0.2 * t, d: 0.2 + 7 * t, drop: floor * smoothstep(t) }, state === "error" ? "err" : "base", t);
+        continue;
+      }
+      // Picked: it comes forward off the wall and grows.
+      const lift = Math.max(P, 0.35 * L);
+      const tone: Tone = state === "success" ? "ok" : state === "loading" ? "hi" : "base";
+      frame(scene, { ...hang, s: 1 + 0.22 * lift, d: 0.2 + 9 * lift, drop: -6 * lift }, tone);
     }
   },
 });

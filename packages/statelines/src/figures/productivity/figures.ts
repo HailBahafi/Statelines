@@ -616,59 +616,80 @@ export const pack = defineFigure({
   },
 });
 
-const PUSHPIN = mirror([[0, 0], [0.3, 0.6], [12, 0.6], [12, 6], [14, 6], [14, 3.4], [24, 3.4], [24, 9], [32, 9], [32.6, 0]]);
-const PUSHPIN_BANDS: P2[] = [[14, 6], [24, 9]];
+/** A push pin's side profile from the needle tip along l: needle, flange, neck, grip and cap. */
+const PUSHPIN = mirror([[0, 0], [0.5, 1], [16, 1], [16, 13], [19.5, 13], [19.5, 5.5], [36.5, 5.5], [36.5, 17], [49.5, 17], [52.5, 14], [53, 0]]);
+const PUSHPIN_BANDS: P2[] = [[19.5, 13], [36.5, 17], [49.5, 17]];
+
+/** A push pin standing upright with its flange at z: flange, neck, grip and cap. */
+function pushpin(scene: Scene, x: number, y: number, z: number, tone: Tone, opacity?: number): void {
+  scene.cylinder(x, y, z, 13, 3.5, tone, opacity);
+  scene.cylinder(x, y, z + 3.5, 5.5, 17, tone, opacity);
+  scene.cylinder(x, y, z + 20.5, 17, 13, tone, opacity);
+  scene.cylinder(x, y, z + 33.5, 14, 3, tone, opacity);
+}
 
 /** A pinned note with a pin dropping in. Use for pins, bookmarks and highlights. */
 export const pin = defineFigure({
   name: "Pin",
-  label: "A push pin dropping onto a note on a corkboard",
-  offset: -6,
-  setup: ({ spring }) => ({ drop: spring(30, 170, 16), up: spring(0, 140, 16), card: spring(0.14, 120, 15), slip: spring(0, 100, 13) }),
+  label: "A big push pin pinning a paper note to a corkboard",
+  offset: 8,
+  setup: ({ spring }) => ({ move: spring(0, 120, 15), drop: spring(0, 170, 16), card: spring(0.16, 120, 15), slip: spring(0, 100, 13) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake(), empty = state === "empty";
-    let z = 30;
-    if (state === "loading") z = 30 - 28 * bump(ctx.loop(1.6));
-    if (state === "success") z = 0;
-    const Z = m.drop.to(z).value, U = m.up.to(state === "loading" || state === "success" ? 1 : 0).value;
-    const r = m.card.to(state === "success" ? 0 : state === "error" ? 0.45 : 0.14).value;
+    let z = 0;
+    if (state === "loading") z = 28 * (1 - bump(ctx.loop(1.6)));
+    const Z = m.drop.to(z).value;
+    const M = clamp(m.move.to(state === "loading" || state === "success" ? 1 : 0).value);
+    const r = m.card.to(state === "success" ? 0 : state === "error" ? 0.5 : 0.16).value;
     const S = clamp(m.slip.to(state === "error" ? 1 : 0).value);
 
-    // A corkboard in a wooden frame, a few specks in the cork.
-    scene.box(0, 0, 0, 132, 108, 4, "base");
-    scene.box(0, 0, 4, 112, 88, 6, empty ? "ghost" : "base");
-    const top = 10.05;
+    // A cork board in a wooden frame, lying on the plate.
+    scene.box(0, 0, 0, 176, 132, 4, "base");
+    scene.box(0, 0, 4, 162, 118, 7, empty ? "ghost" : "base");
+    const top = 11.05;
     if (!empty) {
-      scene.rect(-50, -38, 50, 38, top, "faint");
-      for (const [x, y] of [[-40, -28], [-30, 26], [34, -30], [42, 6], [-44, 4], [20, 30], [8, -32]] as const) scene.disc(x, y, top, 0.9, "muted", { fill: true });
+      scene.rect(-73, -51, 73, 51, top, "muted");
+      for (const [x, y] of [[-62, -6], [-40, 40], [60, 42], [66, -10], [-8, -44], [24, 44], [-66, 30]] as const) scene.disc(x, y, top, 1, "muted", { fill: true });
+      // Two older notes at the back, each held by a small pin.
+      const small = (x: number, y: number, w: number, d: number) => {
+        scene.box(x, y, 11, w, d, 1, "base");
+        scene.line([x - w / 2 + 5, y - 1, 12.1], [x + w / 2 - 5, y - 1, 12.1], "faint");
+        scene.line([x - w / 2 + 5, y + 5, 12.1], [x + 2, y + 5, 12.1], "faint");
+        scene.cylinder(x, y - d / 2 + 5, 12, 3, 4, "muted");
+        scene.cylinder(x, y - d / 2 + 5, 16, 4.2, 3, "muted");
+      };
+      small(50, -30, 36, 34);
     }
-    // The note: a card with three lines, turned a little; on error it slips off the edge.
-    const cx = -4 + 26 * S + shake, cy = 2 + 14 * S, cz = 10.6;
-    const C = (u: number, v: number): Vec3 => [cx + u * Math.cos(r) - v * Math.sin(r), cy + u * Math.sin(r) + v * Math.cos(r), cz];
-    const note: Tone = empty ? "ghost" : state === "success" ? "ok" : state === "error" ? "err" : "base";
-    const card = [C(-28, -20), C(28, -20), C(28, 20), C(-28, 20)];
-    if (empty) { scene.polyline(card, "ghost", { closed: true }); return; }
-    scene.panel(card, note);
-    for (let k = 0; k < 3; k++) scene.line(C(-18, 0 + k * 7), C(k === 2 ? 4 : 20, 0 + k * 7), note === "base" ? "muted" : note);
 
-    // The pin: needle, flange, waist and head. It lies on the cork, drops in, or on error lies bent on the card.
-    const [px, py] = C(-14, -10);
+    // The note: a sheet with lines, turned a little until it is pinned; on error it slips toward the edge.
+    const cx = -14 + 30 * S + shake, cy = 6 + 16 * S, cz = 11;
+    const C = (u: number, v: number, h = cz): Vec3 => [cx + u * Math.cos(r) - v * Math.sin(r), cy + u * Math.sin(r) + v * Math.cos(r), h];
+    const note: Tone = empty ? "ghost" : state === "success" ? "ok" : state === "error" ? "err" : "base";
+    const NW = 44, ND = 34;
+    if (empty) { scene.polyline([C(-NW, -ND, top), C(NW, -ND, top), C(NW, ND, top), C(-NW, ND, top)], "ghost", { closed: true }); return; }
+    scene.panel([C(-NW, -ND), C(NW, -ND), C(NW, ND), C(-NW, ND)], note);
+    scene.panel([C(-NW, -ND, cz + 1.5), C(NW, -ND, cz + 1.5), C(NW, ND, cz + 1.5), C(-NW, ND, cz + 1.5)], note);
+    const ink: Tone = note === "base" ? "muted" : note;
+    for (let k = 0; k < 4; k++) scene.line(C(-14, -6 + k * 10, cz + 1.6), C(k === 3 ? 10 : 34, -6 + k * 10, cz + 1.6), ink);
+
+    // The big pin. It waits in the cork, travels to the note's corner and presses in; on error it lies on its side.
+    const [nx, ny] = C(-28, -18);
+    const rest: [number, number] = [56, 32];
     if (state === "error") {
-      // It did not hold: the pin has fallen out and lies on its side across the note.
-      drawTool(scene, PUSHPIN, PUSHPIN_BANDS, tool([px + 4, py + 10, cz + 0.6], -2.6 + 0.4 * S, 0.18), "err");
+      const at = tool([lerp(nx, rest[0], S) - 16, lerp(ny, rest[1], S) + 8, top + 1], -0.55, 0.3);
+      drawTool(scene, PUSHPIN, PUSHPIN_BANDS, (l, w, n) => at(l, n * 6, w), "err");
       return;
     }
-    const lift = state === "idle" ? ctx.hover * 4 : 0;
-    drawTool(scene, PUSHPIN, PUSHPIN_BANDS, tool([40, -30, 11.2 + lift], Math.PI / 2 + 0.2, 0.2), "base", 1 - U);
-    if (U > 0.02) {
-      const tone: Tone = state === "loading" ? "hi" : "ok", z0 = cz - 12 + Z;
-      if (Z > 1) scene.disc(px, py, cz + 0.05, 3.4, "faint", { opacity: U });
-      if (Z > 0.3) scene.line([px, py, Math.max(cz, z0)], [px, py, z0 + 12], tone, { bold: true, opacity: U });
-      scene.cylinder(px, py, z0 + 12, 6, 2, tone, U);
-      scene.cylinder(px, py, z0 + 14, 3.4, 10, tone, U);
-      scene.cylinder(px, py, z0 + 24, 9, 8, tone, U);
+    const lift = state === "idle" ? ctx.hover * 5 : 0;
+    const px = lerp(rest[0], nx, M), py = lerp(rest[1], ny, M);
+    const base = lerp(top, cz + 1.6, M) + Z + 34 * bump(M) * (state === "loading" ? 0 : 1) + lift;
+    const tone: Tone = state === "loading" ? "hi" : state === "success" ? "ok" : "base";
+    if (base > cz + 3) {
+      scene.disc(px, py, cz + 1.65, 9, "faint", { fill: true, opacity: 0.6 });
+      scene.line([px, py, base - 16], [px, py, base], tone, { bold: true });
     }
+    pushpin(scene, px, py, base, tone);
   },
 });
 
@@ -752,68 +773,107 @@ export const whiteboard = defineFigure({
   },
 });
 
-/** A road past milestones to a finish flag. Use for milestones, goals and launches. */
+/** A rocky peak: a ring of base points (radius jittered) under an apex. */
+interface Peak { ring: Vec3[]; apex: Vec3; turn: number }
+function makePeak(cx: number, cy: number, R: number, H: number, jitter: readonly number[], turn = 0): Peak {
+  const n = jitter.length;
+  const ring = jitter.map((j, i): Vec3 => { const a = turn + (i / n) * Math.PI * 2; return [cx + R * j * Math.cos(a), cy + R * j * Math.sin(a), 4]; });
+  return { ring, apex: [cx - 3, cy - 3, 4 + H], turn };
+}
+/** The point on the peak's skin at fraction h of its height and angle a about its axis. */
+function onPeak(k: Peak, h: number, a: number): Vec3 {
+  const n = k.ring.length, f = ((((a - k.turn) / (Math.PI * 2)) * n) % n + n) % n, i = Math.floor(f), t = f - i;
+  const ridge = (p: Vec3): Vec3 => [lerp(p[0], k.apex[0], h), lerp(p[1], k.apex[1], h), lerp(p[2], k.apex[2], h)];
+  const p = ridge(k.ring[i]!), q = ridge(k.ring[(i + 1) % n]!);
+  return [lerp(p[0], q[0], t), lerp(p[1], q[1], t), lerp(p[2], q[2], t) + 0.4];
+}
+/** Draws a peak: its silhouette, dim ridges on the side that faces us, and a snow cap. */
+function drawPeak(scene: Scene, k: Peak, tone: Tone, cap = 0.72): void {
+  const sx = (p: Vec3) => p[0] - p[1], sy = (p: Vec3) => (p[0] + p[1]) / 2 - p[2];
+  const pts = [...k.ring, k.apex].sort((p, q) => sx(p) - sx(q) || sy(p) - sy(q));
+  const cross = (o: Vec3, a: Vec3, b: Vec3) => (sx(a) - sx(o)) * (sy(b) - sy(o)) - (sy(a) - sy(o)) * (sx(b) - sx(o));
+  const lo: Vec3[] = [], hi: Vec3[] = [];
+  for (const p of pts) { while (lo.length > 1 && cross(lo[lo.length - 2]!, lo[lo.length - 1]!, p) <= 0) lo.pop(); lo.push(p); }
+  for (const p of [...pts].reverse()) { while (hi.length > 1 && cross(hi[hi.length - 2]!, hi[hi.length - 1]!, p) <= 0) hi.pop(); hi.push(p); }
+  scene.panel([...lo.slice(0, -1), ...hi.slice(0, -1)], tone);
+  if (tone === "ghost") return;
+  const n = k.ring.length, ridge: Tone = tone === "base" ? "faint" : tone;
+  // A ridge shows when one of the faces beside it looks toward the viewer.
+  const faces = k.ring.map((a, i) => {
+    const b = k.ring[(i + 1) % n]!, u = [b[0] - a[0], b[1] - a[1], 0], v = [k.apex[0] - a[0], k.apex[1] - a[1], k.apex[2] - a[2]];
+    const nx = u[1]! * v[2]! - u[2]! * v[1]!, ny = u[2]! * v[0]! - u[0]! * v[2]!, nz = u[0]! * v[1]! - u[1]! * v[0]!;
+    return nx + ny + nz > 0;
+  });
+  for (let i = 0; i < n; i++) if (faces[i] && faces[(i + n - 1) % n]) scene.line(k.ring[i]!, k.apex, ridge);
+  // The snow cap: a zigzag line across the faces we see.
+  const snow: Vec3[] = [], s = faces.findIndex((v, i) => !v && faces[(i + 1) % n]);
+  const at = (i: number, h: number): Vec3 => onPeak(k, h, k.turn + (i / n) * Math.PI * 2);
+  for (let j = s + 1; j < s + 1 + n && faces[j % n]; j++) snow.push(at(j, cap + 0.03), at(j + 0.5, cap - 0.07));
+  snow.push(at(s + 1 + faces.filter(Boolean).length, cap + 0.03));
+  if (snow.length > 1) scene.panel([...snow, k.apex], tone);
+}
+
+const MAIN = makePeak(10, 6, 66, 100, [1, 0.86, 1.08, 0.9, 1.02, 1.1, 0.84, 1, 1.1, 0.88], 0.2);
+const BACK = makePeak(-52, -44, 40, 66, [1, 0.9, 1.08, 0.95, 1, 0.92, 1.05]);
+/** The trail: switchbacks across the face that looks at us, from the foot (t = 0) to the summit (t = 1). */
+const trail = (t: number): Vec3 => onPeak(MAIN, t * 0.95, Math.PI / 4 + 0.95 * (1 - 0.55 * t) * Math.sin(t * Math.PI * 3.5 - 0.6));
+
+/** A climber on a mountain trail to a summit flag. Use for milestones, goals and launches. */
 export const milestone = defineFigure({
   name: "Milestone",
-  label: "A walker on a road past milestones to a flag",
-  offset: 0,
-  setup: ({ spring }) => ({ runner: spring(0, 120, 16), flag: spring(0, 110, 14), fall: spring(0, 100, 13) }),
+  label: "A walker climbing a winding trail up a mountain to plant a flag at the summit",
+  offset: 4,
+  setup: ({ spring }) => ({ runner: spring(0, 120, 16), flag: spring(0, 110, 14), slide: spring(0, 100, 13) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake(), empty = state === "empty";
-    const p = state === "loading" ? ctx.progress(3) : state === "success" ? 1 : state === "error" ? 0.4 : state === "empty" ? 0 : 0.3;
+    const p = state === "loading" ? ctx.progress(3) : state === "success" ? 1 : state === "error" ? 0.36 : state === "empty" ? 0 : 0.3 + ctx.hover * 0.05;
     const P = clamp(m.runner.to(p).value);
-    const F = clamp(m.flag.to(state === "success" ? 1 : 0).value), Fa = clamp(m.fall.to(state === "error" ? 1 : 0).value);
-    const X0 = -62, X1 = 50, rx = (t: number) => lerp(X0, X1, t), RY = 6;
-    const road: Tone = empty ? "ghost" : "base";
+    const F = clamp(m.flag.to(state === "success" ? 1 : 0).value, 0, 1.2), Sl = clamp(m.slide.to(state === "error" ? 1 : 0).value);
     const walker: Tone = state === "loading" ? "hi" : state === "idle" ? "base" : ctx.verdict();
 
-    scene.box(0, 0, 0, 152, 64, 4, "base");
-    // The flag at the finish: a footing, a pole and a pennant that runs up on success.
-    const fx = X1 + 10, fyy = -12;
-    scene.box(fx, fyy, 4, 7, 7, 3, road);
-    scene.cylinder(fx, fyy, 7, 1.6, 62, road);
-    scene.cylinder(fx, fyy, 69, 2.6, 2.6, road);
-    const ft = lerp(40, 67, F), wave = (k: number) => Math.sin(k * 1.6) * 2;
-    const pennant: Vec3[] = [0, 1, 2, 3].map(k => [fx, fyy - 2 - k * 9, ft + wave(k)] as Vec3)
-      .concat([3, 2, 1, 0].map(k => [fx, fyy - 2 - k * 9, ft - 18 + wave(k)] as Vec3));
-    if (empty) scene.polyline(pennant, "ghost", { closed: true });
-    else scene.panel(pennant, state === "success" ? "ok" : state === "idle" ? "muted" : "base");
+    scene.box(0, 0, 0, 160, 140, 4, "base");
+    drawPeak(scene, BACK, empty ? "ghost" : "base", 0.62);
+    drawPeak(scene, MAIN, empty ? "ghost" : "base");
+    if (empty) {
+      scene.polyline(Array.from({ length: 41 }, (_, i) => trail(i / 40)), "ghost");
+      return;
+    }
 
-    // Milestones behind the road: arched stones with a band; on error the one past the break has toppled.
-    const stone = (t: number, k: number) => {
-      const x = rx(t), y = -6;
-      const arch = (n: number): Vec3[] => {
-        const pts: Vec3[] = [[x - 6, y + n, 4], [x + 6, y + n, 4]];
-        for (let i = 0; i <= 8; i++) { const a = (i / 8) * Math.PI; pts.push([x + 6 * Math.cos(a), y + n, 16 + 6 * Math.sin(a)]); }
-        return pts;
-      };
-      const passed = P >= t - 0.01;
-      const tone: Tone = empty ? "ghost" : state === "success" ? "ok" : passed ? "base" : "muted";
-      if (state === "error" && k === 2) {
-        const T = turned(scene, [x, y - 2.5, 4], (Math.PI / 2) * Fa, -6, 6, 0, 5, 0, 22, "err");
-        scene.line(T(-4, 5.05, 14), T(4, 5.05, 14), "err");
-        return;
-      }
-      if (empty) { scene.polyline(arch(2.5), "ghost", { closed: true }); return; }
-      scene.panel(arch(-2.5), tone);
-      scene.panel(arch(2.5), tone);
-      scene.line([x - 4, y + 2.55, 14], [x + 4, y + 2.55, 14], passed ? "base" : "faint", { bold: passed });
-    };
-    [0.25, 0.5, 0.75].forEach(stone);
+    // The trail: the part walked in the walker's tone, the rest faint. On error a rockslide cuts it.
+    const N = 60, cut = [0.5, 0.6];
+    const walked: Vec3[] = [], ahead: Vec3[][] = [[]];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N;
+      if (state === "error" && t > cut[0]! && t < cut[1]!) { if (ahead[ahead.length - 1]!.length) ahead.push([]); continue; }
+      if (t <= P) walked.push(trail(t));
+      if (t >= P - 1 / N) ahead[ahead.length - 1]!.push(trail(t));
+    }
+    for (const seg of ahead) if (seg.length > 1) scene.polyline(seg, "muted", { bold: true });
+    if (walked.length > 1) scene.polyline(walked, state === "idle" ? "base" : walker, { bold: true });
+    if (state === "error") {
+      // Rocks tumbling down across the trail where it broke.
+      const f = ctx.fade(0.6);
+      [[0.53, 0.9, 7], [0.57, 0.75, 5], [0.52, 0.62, 6], [0.58, 0.48, 4]].forEach(([t, h, s], k) => {
+        const q = onPeak(MAIN, lerp(t! * 0.95, h! * t! * 0.95, f), Math.PI / 4 + 0.4 - k * 0.25);
+        scene.box(q[0], q[1], q[2] - 1, s! * 1.5, s! * 1.5, s! * 1.1, "err");
+      });
+    }
 
-    // The road, a dashed centre line and a finish line; on error a gap breaks it.
-    const gap = state === "error" ? [0.5, 0.62] : null;
-    const seg = (a: number, b: number) => scene.box((rx(a) + rx(b)) / 2, RY, 4, rx(b) - rx(a), 18, 1.5, road);
-    if (gap) { seg(-0.06, gap[0]!); seg(gap[1]!, 1.06); }
-    else seg(-0.06, 1.06);
-    if (empty) return;
-    for (let t = 0; t < 1; t += 0.09) if (!gap || t + 0.04 < gap[0]! || t > gap[1]!) scene.line([rx(t), RY, 5.55], [rx(t + 0.04), RY, 5.55], "faint");
-    scene.line([X1 + 2, RY - 9, 5.6], [X1 + 2, RY + 9, 5.6], state === "success" ? "ok" : "muted", { bold: true });
-    if (gap) scene.polyline([[rx(gap[0]!), RY - 9, 4.05], [rx(0.56) - 2, RY - 3, 4.05], [rx(0.56) + 2, RY + 2, 4.05], [rx(gap[1]!), RY + 9, 4.05]], "err", { opacity: ctx.fade(0.4) });
+    // The summit: a cairn, and on success the flag planted on top.
+    const top = MAIN.apex;
+    scene.box(top[0], top[1], top[2] - 3, 6, 6, 4, "base");
+    if (F > 0.02) {
+      const h = 30 * F, flag: Tone = state === "success" ? "ok" : "base";
+      scene.cylinder(top[0], top[1], top[2] + 1, 1.3, h, flag);
+      const wave = (k: number) => Math.sin(k * 1.4) * 2;
+      const pennant: Vec3[] = [0, 1, 2, 3].map(k => facing(top[0], top[1], top[2] + h - 1 + wave(k), k * 6 * F, 0))
+        .concat([3, 2, 1, 0].map(k => facing(top[0], top[1], top[2] + h - 13 * F + wave(k), k * 6 * F, 0)));
+      scene.panel(pennant, flag);
+    }
 
-    // The trail walked so far, and the walker.
-    if (P > 0.01) scene.line([rx(0), RY, 5.6], [rx(P), RY, 5.6], state === "idle" ? "muted" : walker, { bold: true });
-    person(scene, rx(P) + shake, RY, 5.5, walker, undefined, 1.05);
+    // The walker on the trail; on error knocked back down it.
+    const q = trail(clamp(P - 0.08 * Sl));
+    person(scene, q[0] + shake * 0.5, q[1], q[2], walker, undefined, 0.8);
   },
 });

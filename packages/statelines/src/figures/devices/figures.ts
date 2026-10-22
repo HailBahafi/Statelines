@@ -56,91 +56,117 @@ function skin(cx: number, cy: number, r: number, z0: number, z1: number, a0: num
   return [...ring(z0, a0, a1), ...ring(z1, a1, a0)];
 }
 
-/** A phone pairing with a pair of headphones. Use for pairing, bluetooth and device setup. */
+/** The outline on screen of a cloud of points: their convex hull in projected (x - y, (x + y) / 2 - z). */
+function screenHull(points: readonly Vec3[]): Vec3[] {
+  const sx = (p: Vec3) => p[0] - p[1], sy = (p: Vec3) => (p[0] + p[1]) / 2 - p[2];
+  const pts = [...points].sort((p, q) => sx(p) - sx(q) || sy(p) - sy(q));
+  const turn = (o: Vec3, a: Vec3, b: Vec3) => (sx(a) - sx(o)) * (sy(b) - sy(o)) - (sy(a) - sy(o)) * (sx(b) - sx(o));
+  const lo: Vec3[] = [], hi: Vec3[] = [];
+  for (const p of pts) { while (lo.length > 1 && turn(lo[lo.length - 2]!, lo[lo.length - 1]!, p) <= 0) lo.pop(); lo.push(p); }
+  for (const p of [...pts].reverse()) { while (hi.length > 1 && turn(hi[hi.length - 2]!, hi[hi.length - 1]!, p) <= 0) hi.pop(); hi.push(p); }
+  return [...lo.slice(0, -1), ...hi.slice(0, -1)];
+}
+/** A rounded rectangle lying flat at height z, centred on (cx, cy): its outline, counter-clockwise from above. */
+const flatRound = (cx: number, cy: number, z: number, a: number, b: number, r: number): Vec3[] =>
+  rounded(cx, 0, cy, a, b, r, 3).map(([x, , y]) => [x, y, z] as Vec3);
+/** The earbuds case: a rounded box with its lid hinged along the back edge. */
+const CASE = { x: 38, y: 16, a: 32, b: 20, r: 15, h: 26, lid: 11 };
+
+/** A phone pairing with a case of earbuds. Use for pairing, bluetooth and device setup. */
 export const pair = defineFigure({
   name: "Pair",
-  label: "A phone pairing with headphones",
-  offset: 12,
-  setup: ({ spring }) => ({ link: spring(0, 160, 18), knob: spring(0, 200, 18), fall: spring(0, 90, 11) }),
+  label: "A phone pairing with an open case of earbuds",
+  offset: 14,
+  setup: ({ spring }) => ({ lid: spring(0, 120, 14), buds: spring(0, 140, 14), link: spring(0, 160, 18) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
     const empty = state === "empty";
-    const K = m.knob.to(state === "success" ? 1 : 0).value;
-    const L = clamp(m.link.to(state === "success" ? 1 : 0).value, 0, 1.2);
-    const F = m.fall.to(state === "error" ? 1.3 : ctx.hover * 0.12).value;
-    const verdict: Tone = state === "loading" ? "hi" : ctx.verdict("muted");
-    scene.box(0, 0, 0, 150, 104, 4, "base");
+    const open = state === "loading" || state === "success" ? 1 : state === "idle" ? ctx.hover * 0.35 : 0;
+    const O = clamp(m.lid.to(open).value, 0, 1.1) * 1.95;
+    const B = clamp(m.buds.to(state === "success" ? 1 : 0).value, 0, 1.2);
+    const L = clamp(m.link.to(state === "success" ? 1 : 0).value);
+    const signal: Tone = state === "loading" ? "hi" : state === "idle" ? "muted" : ctx.verdict("muted");
+    scene.box(0, 0, 0, 164, 116, 4, "base");
 
-    // The route between them runs along the floor.
-    const r0: Vec3 = [-12, 14, 4.05], r1: Vec3 = [8, -8, 4.05];
+    // The route between them runs along the floor; bluetooth pulses spread from the case while it searches.
+    const r0: Vec3 = [-22, 8, 4.05], r1: Vec3 = [2, 14, 4.05];
     const along = (t: number): Vec3 => [lerp(r0[0], r1[0], t), lerp(r0[1], r1[1], t), 4.05];
     if (!empty) {
       if (state === "loading") {
         scene.line(r0, r1, "faint");
         for (let k = 0; k < 3; k++) {
-          const q = (ctx.loop(1.4) + k / 3) % 1;
-          scene.line(along(q * 0.85), along(q * 0.85 + 0.15), "hi", { bold: true });
+          const q = (ctx.loop(1.6) + k / 3) % 1;
+          scene.arc(CASE.x, CASE.y, 4.05, 38 + q * 22, Math.PI * 0.95, Math.PI * 1.55, "hi", { bold: k === 0, opacity: 1 - q });
         }
       } else if (state === "error") {
-        scene.line(r0, along(0.42), "err", { bold: true, opacity: ctx.fade() });
-        scene.line(along(0.58), r1, "faint");
-      } else if (L > 0.02) {
-        scene.line(r0, along(Math.min(1, L)), "ok", { bold: true });
-      }
+        scene.line(r0, along(0.4), "err", { bold: true, opacity: ctx.fade() });
+        scene.line(along(0.62), r1, "faint");
+      } else if (L > 0.02) scene.line(r0, along(L), "ok", { bold: true });
     }
 
-    // The phone, standing, its screen looking down-left.
-    const PX = -34, PY = 22, PZ = 39;
-    const face = slab(scene, PX, PY, PZ, 19, 35, 6, 8, empty ? "ghost" : "base");
+    // The phone, standing at the back left, its screen looking down-left.
+    const PX = -40, PY = -12, PZ = 4 + 46;
+    const face = slab(scene, PX, PY, PZ, 23, 46, 7, 8, empty ? "ghost" : "base");
     const on = (u: number, z: number, d = 0.05): Vec3 => [PX + u, face + d, z];
     if (!empty) {
-      scene.polyline(rounded(PX, face + 0.05, PZ, 15, 31, 4, 2), "faint", { closed: true });
-      scene.line(on(-4, 70), on(4, 70), "muted");
-      // A headphone glyph above the device row.
-      scene.polyline(frontArc(PX, face + 0.1, 50, 7, 0, Math.PI, 10), "muted", { bold: true });
-      scene.polyline([on(-8, 50), on(-8, 43), on(-5, 43), on(-5, 50)], "muted", { closed: true });
-      scene.polyline([on(5, 50), on(5, 43), on(8, 43), on(8, 50)], "muted", { closed: true });
+      scene.polyline(rounded(PX, face + 0.05, PZ, 19, 42, 4, 2), "faint", { closed: true });
+      scene.line(on(-5, 90), on(5, 90), "muted");
+      // The bluetooth rune in the middle of the screen.
+      const rune: [number, number][] = [[-6, 7], [6, -5], [0, -11], [0, 11], [6, 5], [-6, -7]];
+      scene.polyline(rune.map(([u, v]) => on(u, 62 + v, 0.1)), signal, { bold: true });
       if (state === "loading") {
         const a = -ctx.time * 5;
-        scene.polyline(frontArc(PX, face + 0.15, 47, 12, a, a + 2.2, 12), "hi", { bold: true });
+        scene.polyline(frontArc(PX, face + 0.15, 62, 17, a, a + 2.2, 12), "hi", { bold: true });
       }
-      // The device row with its toggle.
+      // The device row: two buds and a toggle that slides on when paired.
       const row: Tone = state === "loading" ? "base" : ctx.verdict();
       const rx = PX + (state === "error" ? shake * 0.5 : 0);
-      scene.box(rx, face + 1.5, 18, 28, 3, 12, row);
-      const rf = face + 3.05;
-      scene.line([rx - 11, rf, 26], [rx - 2, rf, 26], "muted");
-      scene.line([rx - 11, rf, 22], [rx - 5, rf, 22], "faint");
-      scene.polyline([[rx + 1, rf, 21], [rx + 12, rf, 21], [rx + 12, rf, 27], [rx + 1, rf, 27]], K > 0.5 ? "ok" : "faint", { closed: true });
-      scene.box(rx + 3.5 + K * 6, rf + 1, 21.5, 4, 2, 5, K > 0.5 ? "ok" : state === "loading" ? "hi" : "muted");
+      scene.box(rx, face + 1.5, 22, 34, 3, 14, row);
+      const rf = face + 3.05, K = clamp(L);
+      for (const u of [-12, -6]) scene.polyline(frontArc(rx + u, rf, 30, 2.4, 0, TAU, 8), "muted");
+      scene.line([rx - 2, rf, 29], [rx + 3, rf, 29], "faint");
+      scene.polyline([[rx + 5, rf, 26], [rx + 15, rf, 26], [rx + 15, rf, 32], [rx + 5, rf, 32]], K > 0.5 ? "ok" : "faint", { closed: true });
+      scene.box(rx + 7.5 + K * 5, rf + 1, 26.5, 4, 2, 5, K > 0.5 ? "ok" : state === "loading" ? "hi" : "muted");
     }
 
-    // The headphones: two ear cups on a headband; they tip over onto the plate on error.
-    const hx = 30 + shake, hy = -24, cz = 16;
-    const T = tip(hy + 9, 4, F);
-    const tone: Tone = empty ? "ghost" : state === "loading" ? "base" : ctx.verdict();
-    const cup = (x: number, ry: number, rz: number, t: Tone) => scene.panel(sideOval(x, hy, cz, ry, rz).map(T), t);
-    const band = (y: number) => {
-      const outer = Array.from({ length: 13 }, (_, i) => T([hx + 26 * Math.cos((i / 12) * Math.PI), y, 25 + 33 * Math.sin((i / 12) * Math.PI)]));
-      const inner = Array.from({ length: 13 }, (_, i) => T([hx + 22 * Math.cos(((12 - i) / 12) * Math.PI), y, 25 + 29 * Math.sin(((12 - i) / 12) * Math.PI)]));
-      scene.panel([...outer, ...inner], tone);
+    // The earbuds case: body, the two buds in their wells, and the lid on its hinge at the back.
+    const cx = CASE.x + shake, cy = CASE.y, top = 4 + CASE.h;
+    const hingeY = cy - CASE.b + 2;
+    const swing = ([x, y, z]: Vec3): Vec3 => {
+      const dy = y - hingeY, dz = z - top, c = Math.cos(O), s = Math.sin(O);
+      return [x, hingeY + dy * c - dz * s, top + dy * s + dz * c];
     };
-    cup(hx - 27, 8, 11, tone);
-    cup(hx - 24, 9, 12, tone);
+    const caseTone: Tone = empty ? "ghost" : state === "error" ? "err" : "base";
+    const lidRing0 = flatRound(cx, cy, top, CASE.a, CASE.b, CASE.r).map(swing);
+    const lidRing1 = flatRound(cx, cy, top + CASE.lid, CASE.a, CASE.b, CASE.r).map(swing);
+    const drawLid = () => {
+      scene.panel(screenHull([...lidRing0, ...lidRing1]), caseTone);
+      if (empty) return;
+      if (O > 0.9) {
+        // Open: its inside faces us, with the rim inset.
+        scene.panel(lidRing0, caseTone);
+        scene.polyline(flatRound(cx, cy, top, CASE.a - 4, CASE.b - 4, CASE.r - 4).map(swing), "faint", { closed: true });
+      } else scene.panel(lidRing1, caseTone);
+    };
+    if (O > 0.9) drawLid();
+    scene.panel(screenHull([...flatRound(cx, cy, 4, CASE.a, CASE.b, CASE.r), ...flatRound(cx, cy, top, CASE.a, CASE.b, CASE.r)]), caseTone);
+    scene.panel(flatRound(cx, cy, top, CASE.a, CASE.b, CASE.r), caseTone);
     if (!empty) {
-      cup(hx - 20, 8, 11, "muted");
-      scene.polyline(sideOval(hx - 19.9, hy, cz, 4.5, 6.5, 12).map(T), "faint");
+      scene.polyline(flatRound(cx, cy, top + 0.05, CASE.a - 4, CASE.b - 4, CASE.r - 4), "faint", { closed: true });
+      // The light on the front of the case.
+      scene.line([cx - 2, cy + CASE.b + 0.05, 16], [cx + 2, cy + CASE.b + 0.05, 16], signal, { bold: true });
+      if (O > 0.3) {
+        const bud: Tone = state === "loading" ? "hi" : state === "success" ? "ok" : "base";
+        for (const side of [-1, 1]) {
+          const bx = cx + side * 13, z0 = top - 2 + 22 * B;
+          if (B > 0.05) scene.cylinder(bx, cy, z0 - 16 * Math.min(1, B), 2.3, 16 * Math.min(1, B), bud);
+          scene.cylinder(bx, cy, z0, 6, 5, bud);
+          scene.disc(bx + 2, cy + 2, z0 + 5.05, 2, bud === "base" ? "muted" : bud, { fill: true });
+        }
+      }
     }
-    band(hy - 3);
-    band(hy + 3);
-    if (!empty) cup(hx + 20, 8, 11, "muted");
-    cup(hx + 23, 9, 12, tone);
-    cup(hx + 26, 8.5, 11.5, tone);
-    if (!empty) {
-      scene.polyline(sideOval(hx + 26.05, hy, cz, 5, 7, 14).map(T), "muted");
-      scene.polyline(sideOval(hx + 26.1, hy + 5, cz - 7, 1.1, 1.1, 6).map(T), state === "idle" ? "faint" : verdict, { bold: state !== "idle" });
-    }
+    if (O <= 0.9) drawLid();
   },
 });
 
@@ -646,74 +672,102 @@ export const satellite = defineFigure({
   },
 });
 
-/** A laptop and a phone with arrows turning between them. Use for push notifications and background sync. */
+/** The cloud's puffs, (u, v, r) in pixels on the viewer-facing plane; its base is flat at v = -14. */
+const PUFFS: [number, number, number][] = [[-30, -2, 13], [-12, 8, 19], [12, 6, 17], [31, -3, 12]];
+const CLOUD: [number, number][] = (() => {
+  const top: [number, number][] = [];
+  for (let u = -43; u <= 43; u += 3) {
+    const v = Math.max(-14, ...PUFFS.map(([pu, pv, r]) => (Math.abs(u - pu) < r ? pv + Math.sqrt(r * r - (u - pu) ** 2) : -14)));
+    top.push([u, v]);
+  }
+  return [[-43, -14], ...top, [43, -14]];
+})();
+/** One thick sync arrow: a band round the centre from a0 through `span`, with a head at its end. */
+function syncArrow(a0: number, span = 2.3, R = 14, r = 9): [number, number][] {
+  const out: [number, number][] = [];
+  for (let i = 0; i <= 10; i++) { const a = a0 + (span * i) / 10; out.push([R * Math.cos(a), R * Math.sin(a)]); }
+  const e = a0 + span, m = (R + r) / 2;
+  out.push([(R + 3.5) * Math.cos(e), (R + 3.5) * Math.sin(e)]);
+  out.push([m * Math.cos(e + 0.55), m * Math.sin(e + 0.55)]);
+  out.push([(r - 3.5) * Math.cos(e), (r - 3.5) * Math.sin(e)]);
+  for (let i = 10; i >= 0; i--) { const a = a0 + (span * i) / 10; out.push([r * Math.cos(a), r * Math.sin(a)]); }
+  return out;
+}
+
+/** A laptop and a phone syncing through a cloud. Use for push notifications and background sync. */
 export const sync = defineFigure({
   name: "Sync",
-  label: "A laptop and a phone syncing",
-  offset: 18,
-  setup: ({ spring }) => ({ turn: spring(0), row: spring(0, 140, 16) }),
+  label: "A laptop and a phone syncing through a cloud with turning arrows",
+  offset: 16,
+  setup: ({ spring }) => ({ turn: spring(0.5), row: spring(0, 140, 16), sag: spring(0, 100, 12) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
     const empty = state === "empty";
-    const a = state === "loading" ? ctx.time * 2.4 : state === "success" ? 0 : state === "error" ? 0.4 : 0.5 + ctx.hover * 0.3;
+    let a = state === "success" ? 0 : state === "error" ? 0.9 : 0.5 + ctx.hover * 0.5;
+    if (state === "loading") { a = -ctx.time * 3; m.turn.set(a); }
     const T = m.turn.to(a).value;
     const R = clamp(m.row.to(state === "success" || state === "loading" ? 1 : 0).value, 0, 1);
+    const Sg = m.sag.to(state === "error" ? 1 : state === "success" ? -0.4 : 0).value;
     const tone: Tone = empty ? "ghost" : state === "loading" ? "hi" : ctx.verdict();
-    const newRow: Tone = state === "loading" ? "hi" : state === "success" ? "ok" : "muted";
-    scene.box(2, 4, 0, 144, 104, 4, "base");
+    const newRow: Tone = state === "loading" ? "hi" : state === "success" ? "ok" : state === "error" ? "err" : "muted";
+    const dev: Tone = empty ? "ghost" : "base";
+    scene.box(0, 0, 0, 164, 112, 4, "base");
+    // The cloud floats over the middle.
+    const CX = -12 + shake, CY = -24, CZ = 92 - 14 * Sg, K = 1.3;
 
-    // The laptop: deck with keyboard and trackpad, and the lid tilted back.
-    const LX = -26, LY = -16, lt = 0.2, hingeY = LY - 22;
-    scene.box(LX, LY, 4, 66, 44, 4, empty ? "ghost" : "base");
+    // The laptop at the back left: deck with keys and trackpad, and the lid tilted back.
+    const LX = -34, LY = 26, lt = 0.18, hingeY = LY - 21;
+    scene.box(LX, LY, 4, 70, 42, 4, dev);
     const lid = (x: number, t: number, k = 0): Vec3 => [LX + x, hingeY - t * Math.sin(lt) + k * Math.cos(lt), 8 + t * Math.cos(lt) + k * Math.sin(lt)];
     if (!empty) {
-      scene.rect(LX - 28, LY - 17, LX + 28, LY + 3, 8.05, "faint");
-      for (let k = 1; k < 4; k++) scene.line([LX - 24, LY - 17 + k * 5, 8.05], [LX + 24, LY - 17 + k * 5, 8.05], "faint");
-      scene.rect(LX - 10, LY + 8, LX + 10, LY + 18, 8.05, "faint");
-      scene.panel([lid(-33, 0, -2.5), lid(33, 0, -2.5), lid(33, 46, -2.5), lid(-33, 46, -2.5)], "base");
+      scene.rect(LX - 30, LY - 16, LX + 30, LY + 3, 8.05, "faint");
+      for (let k = 1; k < 4; k++) scene.line([LX - 26, LY - 16 + k * 5, 8.05], [LX + 26, LY - 16 + k * 5, 8.05], "faint");
+      scene.rect(LX - 10, LY + 7, LX + 10, LY + 17, 8.05, "faint");
+      scene.panel([lid(-35, 0, -2.5), lid(35, 0, -2.5), lid(35, 48, -2.5), lid(-35, 48, -2.5)], "base");
     }
-    scene.panel([lid(-33, 0), lid(33, 0), lid(33, 46), lid(-33, 46)], empty ? "ghost" : "base");
+    scene.panel([lid(-35, 0), lid(35, 0), lid(35, 48), lid(-35, 48)], dev);
     if (!empty) {
-      scene.polyline([lid(-29, 4, 0.05), lid(29, 4, 0.05), lid(29, 42, 0.05), lid(-29, 42, 0.05)], "faint", { closed: true });
+      scene.polyline([lid(-31, 4, 0.05), lid(31, 4, 0.05), lid(31, 44, 0.05), lid(-31, 44, 0.05)], "faint", { closed: true });
       for (let j = 0; j < 3; j++) {
-        const t = 34 - j * 10, rt: Tone = j === 2 ? newRow : "muted";
-        scene.polyline([lid(-23, t - 3, 0.1), lid(-17, t - 3, 0.1), lid(-17, t + 3, 0.1), lid(-23, t + 3, 0.1)], rt, { closed: true });
-        scene.line(lid(-12, t, 0.1), lid(j === 2 ? 6 : 16, t, 0.1), rt, { bold: j === 2 && state !== "idle" });
+        const t = 36 - j * 11, rt: Tone = j === 2 ? newRow : "muted";
+        scene.polyline([lid(-25, t - 3, 0.1), lid(-18, t - 3, 0.1), lid(-18, t + 3, 0.1), lid(-25, t + 3, 0.1)], rt, { closed: true });
+        scene.line(lid(-13, t, 0.1), lid(j === 2 ? 8 : 18, t, 0.1), rt, { bold: j === 2 && state !== "idle" });
       }
     }
 
-    // The phone lying on the plate, its list catching up with the laptop's.
-    const PX = 36, PY = 18;
-    scene.box(PX, PY, 4, 26, 48, 4, empty ? "ghost" : "base");
+    // The phone stands at the front right, its screen looking down-left.
+    const PX = 46, PY = -18;
+    const pf = slab(scene, PX, PY, 4 + 40, 20, 40, 6, 7, dev);
     if (!empty) {
-      scene.rect(PX - 10.5, PY - 20, PX + 10.5, PY + 19, 8.05, "faint");
+      scene.polyline(rounded(PX, pf + 0.05, 44, 16.5, 35, 3, 2), "faint", { closed: true });
+      scene.line([PX - 4, pf + 0.05, 81.5], [PX + 4, pf + 0.05, 81.5], "muted");
       for (let j = 0; j < 3; j++) {
-        const y = PY - 12 + j * 10, last = j === 2;
+        const z = 64 - j * 13, last = j === 2;
         if (last && R < 0.05 && state !== "error") continue;
-        const rt: Tone = last ? (state === "error" ? "err" : newRow) : "muted";
-        const op = last && state !== "error" ? R : undefined;
-        scene.rect(PX - 8, y - 3, PX - 3, y + 3, 8.1, rt, op);
-        scene.line([PX, y, 8.1], [PX + (last ? 4 : 8), y, 8.1], rt, { opacity: op, bold: last && state !== "idle" });
+        const rt: Tone = last ? newRow : "muted", op = last && state !== "error" ? R : undefined;
+        scene.polyline([[PX - 10, pf + 0.1, z - 3], [PX - 5, pf + 0.1, z - 3], [PX - 5, pf + 0.1, z + 3], [PX - 10, pf + 0.1, z + 3]], rt, { closed: true, opacity: op });
+        scene.line([PX - 1, pf + 0.1, z], [PX + (last ? 5 : 10), pf + 0.1, z], rt, { opacity: op, bold: last && state !== "idle" });
       }
     }
 
-    // Two arrows chasing round a ring on the plate between them.
-    const RX = -20 + shake, RY = 32;
-    const arrow = (t0: number) => {
-      const pts: Vec3[] = [];
-      for (let i = 0; i <= 10; i++) { const q = t0 + (i / 10) * 2.1; pts.push([RX + 11 * Math.cos(q), RY + 11 * Math.sin(q), 4.1]); }
-      const t1 = t0 + 2.1;
-      pts.push([RX + 7 * Math.cos(t1), RY + 7 * Math.sin(t1), 4.1]);
-      pts.push([RX + 13.5 * Math.cos(t1 + 0.55), RY + 13.5 * Math.sin(t1 + 0.55), 4.1]);
-      pts.push([RX + 20 * Math.cos(t1), RY + 20 * Math.sin(t1), 4.1]);
-      for (let i = 10; i >= 0; i--) { const q = t0 + (i / 10) * 2.1; pts.push([RX + 16 * Math.cos(q), RY + 16 * Math.sin(q), 4.1]); }
-      scene.panel(pts, tone);
-    };
-    arrow(T);
-    if (state !== "error") arrow(T + Math.PI);
-    else scene.panel([0, 1, 2].map(i => [RX + 16 * Math.cos(T + Math.PI + 1.4 + i * 0.25), RY + 16 * Math.sin(T + Math.PI + 1.4 + i * 0.25), 4.1] as Vec3)
-      .concat([2, 1, 0].map(i => [RX + 11 * Math.cos(T + Math.PI + 1.4 + i * 0.25), RY + 11 * Math.sin(T + Math.PI + 1.4 + i * 0.25), 4.1] as Vec3)), "err", ctx.fade());
+    // Data on its way: a packet rises from the laptop to the cloud while another comes down to the phone.
+    if (state === "loading") {
+      const q = ctx.loop(1.6);
+      const up = (t: number): Vec3 => [lerp(LX + 4, CX - 8, t), lerp(LY - 14, CY, t), lerp(58, CZ - 16, t)];
+      const down = (t: number): Vec3 => [lerp(CX + 8, PX - 4, t), lerp(CY, PY + 4, t), lerp(CZ - 16, 90, t)];
+      for (const p of [up(q), down(q)]) scene.box(p[0], p[1], p[2] - 4, 8, 8, 8, "hi");
+    }
+
+    // The cloud, with two thick arrows chasing each other round on its face.
+    const C = (u: number, v: number, d = 0): Vec3 => { const p = facing(CX, CY, CZ, u * K, v * K); return [p[0] + d, p[1] + d, p[2]]; };
+    if (empty) { scene.panel(CLOUD.map(([u, v]) => C(u, v)), "ghost"); return; }
+    const body: Tone = state === "error" ? "err" : "base";
+    scene.panel(CLOUD.map(([u, v]) => C(u, v, -3)), body);
+    scene.panel(CLOUD.map(([u, v]) => C(u, v)), body);
+    const arrow = (a0: number, t: Tone) => scene.panel(syncArrow(a0).map(([u, v]) => C(u, v + 1, 0.1)), t);
+    arrow(T, tone);
+    if (state !== "error") arrow(T + Math.PI, tone);
   },
 });
 

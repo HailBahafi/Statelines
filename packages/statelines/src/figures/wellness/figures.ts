@@ -242,69 +242,75 @@ export const streak = defineFigure({
   },
 });
 
-/** A person meditating on a cushion as breath rings expand and contract. Use for breathing exercises, meditation and calm moments. */
+/** The seated figure, cut as a standee facing the viewer, in (u, v) pixels above the cushion. */
+const LEGS: UV[] = [[-38, 6], [-32, 0], [32, 0], [38, 6], [33, 12], [12, 15], [-12, 15], [-33, 12]];
+const TORSO: UV[] = [[-12, 10], [12, 10], [14, 30], [16, 38], [12, 43], [-12, 43], [-16, 38], [-14, 30]];
+/** One arm, the right one (mirror u for the left): shoulder, elbow out, hand down on the knee. */
+const ARM: UV[] = [[13, 43], [19, 41], [31, 24], [35, 10], [29, 10], [25, 22], [14, 34]];
+
+/** A person meditating on a cushion inside a breathing circle. Use for breathing exercises, meditation and calm moments. */
 export const breathe = defineFigure({
   name: "Breathe",
-  label: "A person meditating as rings expand and contract in breath",
-  offset: 18,
+  label: "A person meditating cross-legged on a cushion inside a circle that grows and shrinks with the breath",
+  offset: 30,
   setup: ({ spring }) => ({ breath: spring(0.3, 90, 14), slump: spring(0, 100, 14) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
     const empty = state === "empty";
-    let I = m.breath.to(state === "success" ? 1 : state === "error" ? 0 : 0.3 + ctx.hover * 0.2).value;
+    let I = m.breath.to(state === "success" ? 1 : state === "error" ? 0.15 : 0.35 + ctx.hover * 0.2).value;
     if (state === "loading") {
       const q = ctx.loop(5);
       I = q < 0.5 ? smoothstep(q * 2) : 1 - smoothstep((q - 0.5) * 2);
       m.breath.set(I);
     }
     const S = clamp(m.slump.to(state === "error" ? 1 : 0).value, 0, 1.2);
-    const body = bodyTone(ctx);
-    const X = shake;
-    scene.cylinder(0, 0, 0, 66, 4, "base");
+    const body: Tone = empty ? "ghost" : state === "loading" ? "base" : ctx.verdict();
+    const ring = accentTone(ctx, "muted");
+    const BZ = 15, K = 1.6;
+    const at = (u: number, v: number, d = 0): Vec3 => { const p = facing(shake, 0, BZ, u * K, v * K); return [p[0] + d, p[1] + d, p[2]]; };
+    scene.cylinder(0, 0, 0, 62, 4, "base");
 
-    // The breath rings on the mat.
-    for (let k = 2; k >= 0; k--) {
-      const r = 41 + k * 8 + I * 6;
-      if (empty) {
-        if (k === 0) scene.arc(0, 0, 4.05, r, 0, TAU, "ghost");
-        continue;
+    // The breathing circle behind the figure: it grows on the in-breath and shrinks on the out-breath.
+    const R = (34 + 13 * I) * K, cv = 40;
+    if (state === "error") {
+      for (let j = 0; j < 5; j++) {
+        const a = (j * TAU) / 5 + 0.3;
+        scene.polyline(faceArc(...at(0, cv), R, a, a + 0.8, 8), "err", { bold: true });
       }
-      if (state === "idle" && k === 2) continue;
-      if (state === "error") {
-        // Broken, ragged rings: the breath lost its rhythm.
-        for (let j = 0; j < 4; j++) {
-          const a = (j * TAU) / 4 + k * 0.7;
-          scene.arc(0, 0, 4.05, r - k * 2, a, a + 0.9 - k * 0.2, k === 0 ? "err" : "faint", { bold: k === 0 });
-        }
-        continue;
+    } else {
+      scene.panel(faceArc(...at(0, cv, -3), R, 0, TAU, 40), empty ? "ghost" : ring);
+      if (!empty) {
+        scene.polyline(faceArc(...at(0, cv, -2.9), R - 9, 0, TAU, 36), "faint");
+        if (state !== "idle") scene.polyline(faceArc(...at(0, cv, -2.9), R + 8, 0, TAU, 40), ring === "base" ? "faint" : ring, { opacity: 0.45 });
       }
-      const t: Tone = state === "loading" ? (k === 0 ? "hi" : "faint") : state === "success" ? "ok" : "faint";
-      scene.arc(0, 0, 4.05, r, 0, TAU, t, { bold: k === 0 && state !== "idle", opacity: 1 - k * 0.25 });
     }
 
-    // The cushion, then the person sitting cross-legged on it.
-    scene.cylinder(X, 0, 4, 32, 9, body);
-    if (empty) return;
-    scene.arc(X, 0, 8.5, 32.05, -Math.PI / 4, (3 * Math.PI) / 4, "faint");
-    // Crossed legs, knees out to each side, facing the viewer.
-    const n = Math.SQRT1_2, fwd = (d: number): [number, number] => [X + d * n, d * n];
-    const [lx, ly] = fwd(6);
-    for (const side of [-1, 1]) scene.cylinder(...(facing(lx, ly, 13, side * 22, 0).slice(0, 2) as [number, number]), 13, 10, 7, body);
-    scene.cylinder(lx, ly, 13, 15, 7, body);
-    const lean = ctx.lean(2.5);
-    const th = 33 + 5 * I - 11 * S, tr = 13 + 1.8 * I;
-    const [tx, ty] = fwd(-3 + 4 * S);
-    scene.cylinder(tx, ty, 20, tr, th, body);
-    const top = 20 + th;
-    // Arms hang from the shoulders, hands resting on the knees.
-    const [kx, ky] = fwd(10);
-    for (const side of [-1, 1]) {
-      scene.polyline([facing(tx, ty, top - 3, side * (tr - 1), 0), facing(tx, ty, top - 15, side * (tr + 9), 0), facing(kx, ky, 20.5, side * 26, 0)], body, { bold: true });
-      scene.disc(...(facing(kx, ky, 20.6, side * 26, 0)), 3, body);
+    // The cushion.
+    scene.cylinder(shake, 0, 4, 38, 11, empty ? "ghost" : "base");
+    if (!empty) scene.arc(shake, 0, 9.5, 38.05, -Math.PI / 4, (3 * Math.PI) / 4, "faint");
+
+    // The figure: torso that swells with the breath, arms out to the knees, crossed legs, then the head.
+    const chest = 1 + 0.07 * I, tall = 1 - 0.12 * S;
+    const torso = (u: number, v: number): UV => [u * (v > 20 ? chest : 1), 10 + (v - 10) * tall];
+    const solid = (pts: UV[], tone: Tone) => {
+      if (tone === "ghost") { scene.polyline(pts.map(([u, v]) => at(u, v)), "ghost", { closed: true }); return; }
+      scene.panel(pts.map(([u, v]) => at(u, v, -2.4)), tone);
+      scene.panel(pts.map(([u, v]) => at(u, v)), tone);
+    };
+    const top = 10 + 33 * tall;
+    solid(TORSO.map(([u, v]) => torso(u, v)), body);
+    for (const side of [-1, 1]) solid(ARM.map(([u, v]): UV => { const [tu, tv] = v > 30 ? torso(u, v) : [u, v]; return [side * tu, tv]; }), body);
+    solid(LEGS, body);
+    if (!empty) {
+      scene.line(at(-30, 6, 0.05), at(4, 10, 0.05), "faint");
+      for (const side of [-1, 1]) scene.panel(faceArc(...at(side * 32, 11, 0.1), 3.6 * K, 0, TAU, 10), body);
     }
-    const [hx, hy] = fwd(-3 + 11 * S);
-    scene.panel(faceArc(hx + lean.x, hy + lean.y, top + 13 - 9 * S, 10, 0, TAU, 20), body);
+    // The head bows forward on error.
+    const hv = top + 13 - 9 * S, hu = 4 * S;
+    if (empty) { scene.polyline(faceArc(...at(hu, hv), 9 * K, 0, TAU, 18), "ghost"); return; }
+    scene.panel(faceArc(...at(hu, hv, -2.4), 9 * K, 0, TAU, 18), body);
+    scene.panel(faceArc(...at(hu, hv), 9 * K, 0, TAU, 18), body);
   },
 });
 
@@ -450,11 +456,32 @@ export const pulse = defineFigure({
   },
 });
 
-/** A sun rising over a horizon, for a new day. Use for morning routines, daily summaries and good-morning states. */
+/** A rocky hill: its outline on screen and the dim ridges on the side that faces the viewer. */
+function drawHill(scene: Scene, cx: number, cy: number, R: number, H: number, jitter: readonly number[], tone: Tone): void {
+  const n = jitter.length;
+  const ring = jitter.map((j, i): Vec3 => { const a = 0.3 + (i / n) * TAU; return [cx + R * j * Math.cos(a), cy + R * j * Math.sin(a), 4]; });
+  const apex: Vec3 = [cx - 4, cy + 3, 4 + H];
+  const sx = (p: Vec3) => p[0] - p[1], sy = (p: Vec3) => (p[0] + p[1]) / 2 - p[2];
+  const pts = [...ring, apex].sort((p, q) => sx(p) - sx(q) || sy(p) - sy(q));
+  const turn = (o: Vec3, a: Vec3, b: Vec3) => (sx(a) - sx(o)) * (sy(b) - sy(o)) - (sy(a) - sy(o)) * (sx(b) - sx(o));
+  const lo: Vec3[] = [], hi: Vec3[] = [];
+  for (const p of pts) { while (lo.length > 1 && turn(lo[lo.length - 2]!, lo[lo.length - 1]!, p) <= 0) lo.pop(); lo.push(p); }
+  for (const p of [...pts].reverse()) { while (hi.length > 1 && turn(hi[hi.length - 2]!, hi[hi.length - 1]!, p) <= 0) hi.pop(); hi.push(p); }
+  scene.panel([...lo.slice(0, -1), ...hi.slice(0, -1)], tone);
+  if (tone === "ghost") return;
+  // A ridge shows when the faces on both sides of it look toward the viewer.
+  const facesUs = (i: number) => {
+    const a = ring[(i + n) % n]!, b = ring[(i + 1 + n) % n]!, u = [b[0] - a[0], b[1] - a[1]], v = [apex[0] - a[0], apex[1] - a[1], apex[2] - a[2]];
+    return u[1]! * v[2]! + (-u[0]! * v[2]!) + (u[0]! * v[1]! - u[1]! * v[0]!) > 0;
+  };
+  for (let i = 0; i < n; i++) if (facesUs(i) && facesUs(i - 1)) scene.line(ring[i]!, apex, "faint");
+}
+
+/** A sun rising over the sea between two hills. Use for morning routines, daily summaries and good-morning states. */
 export const sunrise = defineFigure({
   name: "Sunrise",
-  label: "A sun rising over a horizon",
-  offset: 16,
+  label: "A sun rising over the sea between two hills, with rays and its reflection on the water",
+  offset: 10,
   setup: ({ spring }) => ({ rise: spring(0.45, 100, 16), cloud: spring(0, 90, 15) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
@@ -465,58 +492,53 @@ export const sunrise = defineFigure({
     if (state === "error") r = 0.3;
     const R = m.rise.to(r).value, K = m.cloud.to(state === "error" ? 1 : 0).value;
     const sun = accentTone(ctx, "base");
-    const SX = -8, SY = -22, SR = 20, sz = lerp(0, 66, R);
-    scene.box(0, 0, 0, 132, 104, 4, "base");
+    const SX = -54, SY = -54, SR = 28, sz = lerp(-SR + 2, 46, R);
+    scene.box(0, 0, 0, 144, 144, 4, "base");
 
-    // Water in front of the range, with the sun's reflection once it is up.
-    if (!empty) {
-      for (const [y, x0, x1] of [[18, -54, -26], [18, 30, 52], [28, -46, -14], [28, 22, 44], [38, -36, -16], [38, 30, 46]] as const) {
-        scene.line([x0, y, 4.05], [x1, y, 4.05], "faint");
-      }
-      const show = clamp((sz - 14) / 30, 0, 1);
-      if (show > 0.02) [[20, 11], [28, 8], [36, 5]].forEach(([y, h]) => {
-        scene.line([SX - h! * show, y!, 4.05], [SX + h! * show, y!, 4.05], sun === "base" ? "muted" : sun, { bold: true });
-      });
-    }
-
-    // The sun, cut off at the plate, and its rays; the mountains in front hide what is still below the ridge.
-    const disc = frontArc(SX, SY, sz, SR, 0, TAU, 28).map(([x, y, z]) => [x, y, Math.max(4, z)] as Vec3);
+    // The sun on the horizon, cut off by the sea, with its rays.
+    const disc = faceArc(SX, SY, sz, SR, 0, TAU, 32).map(([x, y, z]) => [x, y, Math.max(4, z)] as Vec3);
     if (empty) scene.polyline(disc, "ghost", { closed: true });
-    else {
+    else if (sz > -SR + 4) {
       const rays: Tone = sun === "base" ? (R > 0.6 ? "muted" : "faint") : sun;
       for (let k = 0; k < 12; k++) {
-        const a = (k * TAU) / 12 + Math.PI / 12, z0 = sz + (SR + 5) * Math.sin(a), z1 = sz + (SR + 12) * Math.sin(a);
-        if (z0 > 6 && z1 > 6) scene.line([SX + (SR + 5) * Math.cos(a), SY, z0], [SX + (SR + 12) * Math.cos(a), SY, z1], rays);
+        const a = (k * TAU) / 12 + Math.PI / 12, i = SR + 6, o = SR + 13 + 4 * (k % 2);
+        const p0 = facing(SX, SY, sz, i * Math.cos(a), i * Math.sin(a)), p1 = facing(SX, SY, sz, o * Math.cos(a), o * Math.sin(a));
+        if (p0[2] > 8 && p1[2] > 8) scene.line(p0, p1, rays, { bold: true });
       }
       scene.panel(disc, sun);
+      scene.polyline(faceArc(SX, SY, sz, SR - 6, 0, TAU, 28).map(([x, y, z]) => [x, y, Math.max(4.2, z)] as Vec3), sun === "base" ? "faint" : sun, { opacity: 0.6 });
     }
 
-    // A cloud drifts in over the sun on error.
+    // A cloud drifts across the sun on error.
     if (K > 0.02) {
-      const cx = lerp(80, SX + 6, K), cz = 36;
-      const puffs: [number, number, number][] = [[-14, 0, 9], [0, 5, 12], [14, 0, 9]];
+      const cu = lerp(90, 8, K), cz = Math.max(sz, 20) + 4;
+      const puffs: [number, number, number][] = [[-14, 0, 10], [0, 6, 13], [15, 0, 9]];
       const top: Vec3[] = [];
-      for (let x = -23; x <= 23; x += 2) {
-        const z = Math.max(0, ...puffs.map(([px, pz, pr]) => Math.abs(x - px) < pr ? pz + Math.sqrt(pr * pr - (x - px) ** 2) : 0));
-        top.push([cx + x, SY + 6, cz + z]);
+      for (let u = -24; u <= 24; u += 3) {
+        const v = Math.max(0, ...puffs.map(([pu, pv, pr]) => Math.abs(u - pu) < pr ? pv + Math.sqrt(pr * pr - (u - pu) ** 2) : 0));
+        top.push(facing(SX + 4, SY + 4, cz, cu + u, v));
       }
-      scene.panel([...top, [cx + 23, SY + 6, cz - 3], [cx - 23, SY + 6, cz - 3]], "base", Math.min(1, K * 1.5));
+      scene.panel([...top, facing(SX + 4, SY + 4, cz, cu + 24, -4), facing(SX + 4, SY + 4, cz, cu - 24, -4)], "base", Math.min(1, K * 1.5));
     }
 
-    // The mountain range behind and the low hills in front, each a flat cut-out with depth.
-    const range: [number, number][] = [[-62, 4], [-32, 50], [-20, 38], [4, 14], [24, 34], [36, 42], [62, 4]];
-    const hill = (x0: number, x1: number, h: number): [number, number][] =>
-      Array.from({ length: 13 }, (_, i) => [lerp(x0, x1, i / 12), 4 + h * Math.sin((Math.PI * i) / 12) ** 0.8]);
-    const layers: [number, [number, number][]][] = [[-10, range], [4, hill(-64, -14, 16)], [4, hill(22, 64, 18)]];
-    for (const [y, pts] of layers) {
-      if (empty) {
-        scene.polyline(pts.map(([x, z]) => [x, y, z] as Vec3), "ghost", { closed: true });
-        continue;
-      }
-      scene.panel(pts.map(([x, z]) => [x, y - 3, z] as Vec3), "base");
-      scene.panel(pts.map(([x, z]) => [x, y, z] as Vec3), "base");
+    // The hills on either side of the bay.
+    const hillTone: Tone = empty ? "ghost" : "base";
+    drawHill(scene, -46, 0, 34, 40, [1, 0.8, 1.15, 0.9, 1.05, 1.1, 0.85, 1], hillTone);
+    drawHill(scene, 2, -48, 36, 50, [1, 1.12, 0.85, 1, 0.9, 1.1, 0.95, 0.88], hillTone);
+    if (empty) return;
+
+    // The water: the sun's reflection runs toward us in shrinking strokes, and a few ripples.
+    const show = clamp((sz + 6) / 40, 0, 1);
+    const flat = (cx: number, cy: number, half: number): [Vec3, Vec3] => [[cx - half * 0.7, cy + half * 0.7, 4.05], [cx + half * 0.7, cy - half * 0.7, 4.05]];
+    if (show > 0.02) for (let k = 0; k < 6; k++) {
+      const c = -36 + k * 11, half = (16 - k * 2.2) * show;
+      const [a, b] = flat(c, c, half);
+      scene.line(a, b, sun === "base" ? "muted" : sun, { bold: k < 3 });
     }
-    if (!empty) scene.polyline([[-38.5, -9.95, 40], [-35, -9.95, 36], [-31, -9.95, 41], [-26, -9.95, 36], [-22, -9.95, 40]], "muted");
+    for (const [x, y, h] of [[-50, 30, 8], [-30, 50, 10], [30, -46, 9], [50, -26, 7], [20, 44, 12], [44, 18, 9]] as const) {
+      const [a, b] = flat(x, y, h);
+      scene.line(a, b, "faint");
+    }
   },
 });
 
