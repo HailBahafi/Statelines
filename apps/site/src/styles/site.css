@@ -265,7 +265,7 @@ td code { white-space: nowrap; }
   .top-nav a:not(.active):not([href="/figures"]):not([href="/docs"]) { display: none; }
   .top-nav { gap: 0; }
   .top-inner { gap: 14px; }
-  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .cards { grid-template-columns: 1fr; gap: 12px; }
   .card { padding: 10px; }
   .card-use { font-size: 13px; }
   .preview { min-height: 300px; padding: 16px; }
@@ -322,3 +322,15 @@ td code { white-space: nowrap; }
   .top-inner { gap: 8px; }
   .top-nav a { padding-inline: 8px; }
 }
+
+/* ── Figure page: setup steps ───────────────────────── */
+.steps { list-style: none; counter-reset: step; display: grid; gap: 28px; padding: 0; margin: 0; }
+.steps > li { counter-increment: step; position: relative; padding-left: 44px; min-width: 0; }
+.steps > li::before {
+  content: counter(step); position: absolute; left: 0; top: -2px; width: 28px; height: 28px; border-radius: 999px;
+  display: grid; place-items: center; font-size: 13px; font-weight: 600; border: 1px solid var(--line-2); color: var(--ink); background: var(--panel);
+}
+.steps h3 { font-size: 16px; margin-bottom: 10px; }
+.steps .tabs { flex-wrap: wrap; }
+.recipe-note { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 10px 0; max-width: 72ch; }
+@media (max-width: 640px) { .steps > li { padding-left: 0; } .steps > li::before { position: static; margin-bottom: 8px; } }

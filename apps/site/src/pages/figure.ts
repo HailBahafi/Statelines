@@ -1,7 +1,7 @@
 import "../styles/site.css";
 import { FIGURE_STATES } from "statelines";
 import { findEntry, neighbours, shelfOf, slugOf, type Entry } from "../data";
-import { DEFAULTS, reactSnippet, toOptions, vanillaSnippet, type Settings } from "../data/snippets";
+import { DEFAULTS, recipes, toOptions, type Settings } from "../data/snippets";
 import { applyStoredTheme, mountFooter, mountHeader } from "../ui/shell";
 import { $, codeBlock, h } from "../ui/dom";
 
@@ -104,21 +104,37 @@ function render(figure: Entry): void {
   );
 
   // ── Code ───────────────────────────────────────────────────
+  // Tabs that remember the reader's choice across figures.
+  const remember = (key: string, fallback: string) => { try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; } };
+  const store = (key: string, value: string) => { try { localStorage.setItem(key, value); } catch { /* private mode */ } };
+  const tabs = (key: string, ids: { id: string; label: string }[], show: (id: string) => void) => {
+    let current = ids.some(t => t.id === remember(key, "")) ? remember(key, "") : ids[0]!.id;
+    const buttons = ids.map(t => {
+      const button = h("button", { type: "button", role: "tab", "aria-selected": String(t.id === current) }, t.label);
+      button.addEventListener("click", () => { current = t.id; store(key, t.id); paint(); });
+      return button;
+    });
+    const paint = () => { buttons.forEach((b, i) => b.setAttribute("aria-selected", String(ids[i]!.id === current))); show(current); };
+    return { bar: h("div", { class: "tabs", role: "tablist" }, ...buttons), paint, get current() { return current; } };
+  };
+
+  const MANAGERS = [
+    { id: "npm", label: "npm", cmd: "npm install statelines" },
+    { id: "pnpm", label: "pnpm", cmd: "pnpm add statelines" },
+    { id: "yarn", label: "yarn", cmd: "yarn add statelines" },
+    { id: "bun", label: "bun", cmd: "bun add statelines" },
+  ];
+  const installArea = h("div", {});
+  const install = tabs("statelines-pm", MANAGERS, id =>
+    installArea.replaceChildren(codeBlock(MANAGERS.find(m => m.id === id)!.cmd, "Terminal")));
+
   const codeArea = h("div", {});
-  let active = 0;
-  const tabButtons = ["React", "Vanilla"].map((label, i) => {
-    const button = h("button", { type: "button", role: "tab", "aria-selected": String(i === 0) }, label);
-    button.addEventListener("click", () => { active = i; showTab(); });
-    return button;
-  });
-  const showTab = () => {
-    tabButtons.forEach((b, i) => b.setAttribute("aria-selected", String(i === active)));
-    renderCode();
-  };
+  const frameworks = tabs("statelines-framework", recipes(figure, settings), () => renderCode());
   const renderCode = () => {
-    const text = active === 0 ? reactSnippet(figure, settings) : vanillaSnippet(figure, settings);
-    codeArea.replaceChildren(codeBlock(text, active === 0 ? `${name}.tsx` : "main.ts"));
+    const recipe = recipes(figure, settings).find(r => r.id === frameworks.current)!;
+    codeArea.replaceChildren(h("p", { class: "recipe-note" }, recipe.note), codeBlock(recipe.code, recipe.file));
   };
+  const showTab = () => { install.paint(); frameworks.paint(); };
 
   // ── Assemble ───────────────────────────────────────────────
   const preview = h("div", { class: "preview" }, stage);
@@ -142,9 +158,20 @@ function render(figure: Entry): void {
         h("h2", {}, "Options"),
         h("div", { class: "controls" }, ...controls))),
     h("section", { class: "section", "aria-labelledby": "code-h" },
-      h("div", { class: "section-head" }, h("h2", { id: "code-h" }, "Use it")),
-      h("div", { class: "tabs", role: "tablist", "aria-label": "Integration" }, ...tabButtons),
-      codeArea),
+      h("div", { class: "section-head" }, h("div", {},
+        h("h2", { id: "code-h" }, "Use it"),
+        h("p", {}, "The code follows the options you set above. No CSS to import: the figure adds its styles on first mount."))),
+      h("ol", { class: "steps" },
+        h("li", {}, h("h3", {}, "Install the package"), install.bar, installArea),
+        h("li", {}, h("h3", {}, "Add it to your page"), frameworks.bar, codeArea),
+        h("li", {}, h("h3", {}, "Drive it from your app"),
+          h("p", { class: "recipe-note" },
+            "Set the state from what your app is doing: ", h("code", {}, "loading"), " while work runs, ",
+            h("code", {}, "success"), " or ", h("code", {}, "error"), " when it ends, ", h("code", {}, "empty"),
+            " when there is nothing yet, and ", h("code", {}, "idle"), " otherwise. Only loading animates; the other states settle and stop.",
+            ...(figure.progress ? [" This figure also takes ", h("code", {}, "progress"), " (0 to 1) to show real progress while loading."] : []),
+            ...(figure.count ? [" Use ", h("code", {}, "count"), ` (${figure.count[0]} to ${figure.count[1]}) to set how many items it shows.`] : [])))),
+    ),
     h("section", { class: "section", "aria-labelledby": "states-h" },
       h("div", { class: "section-head" }, h("h2", { id: "states-h" }, "Every state")),
       h("div", { class: "states-grid" }, ...FIGURE_STATES.map(s => {
