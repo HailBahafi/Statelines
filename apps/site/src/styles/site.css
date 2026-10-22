@@ -334,3 +334,13 @@ td code { white-space: nowrap; }
 .steps .tabs { flex-wrap: wrap; }
 .recipe-note { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 10px 0; max-width: 72ch; }
 @media (max-width: 640px) { .steps > li { padding-left: 0; } .steps > li::before { position: static; margin-bottom: 8px; } }
+
+/* ── Page change: a progress bar while the next page loads ─ */
+html.navigating::before {
+  content: ""; position: fixed; z-index: 100; top: 0; left: 0; height: 2px; width: 100%;
+  background: var(--accent); transform-origin: 0 50%; animation: nav-progress 1.6s cubic-bezier(.2,.7,.3,1) forwards;
+}
+@keyframes nav-progress { from { transform: scaleX(0); } to { transform: scaleX(.9); } }
+html.navigating { cursor: progress; }
+.card.opening { border-color: var(--ink); box-shadow: var(--shadow); }
+@media (prefers-reduced-motion: reduce) { html.navigating::before { animation: none; transform: scaleX(.6); } }

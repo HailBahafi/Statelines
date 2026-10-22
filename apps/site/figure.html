@@ -10,10 +10,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* Shown until the page script renders, so opening a figure never looks blank. */
+    body{margin:0;background:#fbfbfa}
+    .boot{max-width:1180px;margin:0 auto;padding:110px 24px 40px;box-sizing:border-box}
+    .boot i{display:block;border-radius:12px;background:linear-gradient(90deg,#eceef1 25%,#f6f7f9 50%,#eceef1 75%);background-size:200% 100%;animation:boot 1.1s linear infinite}
+    .boot .t{width:200px;height:36px;margin-bottom:14px}.boot .s{width:320px;max-width:80%;height:16px;margin-bottom:30px}.boot .p{height:360px}
+    @keyframes boot{to{background-position:-200% 0}}
+    @media (prefers-color-scheme:dark){:root:not([data-theme=light]) body{background:#0c0d10}:root:not([data-theme=light]) .boot i{background-image:linear-gradient(90deg,#16191e 25%,#20242b 50%,#16191e 75%)}}
+    :root[data-theme=dark] body{background:#0c0d10}:root[data-theme=dark] .boot i{background-image:linear-gradient(90deg,#16191e 25%,#20242b 50%,#16191e 75%)}
+    @media (prefers-reduced-motion:reduce){.boot i{animation:none}}
+  </style>
 </head>
 <body>
   <div id="top"></div>
-  <main class="wrap" id="app"></main>
+  <main class="wrap" id="app"><div class="boot" aria-busy="true" aria-label="Loading figure"><i class="t"></i><i class="s"></i><i class="p"></i></div></main>
   <div id="foot"></div>
   <script type="module" src="/src/pages/figure.ts"></script>
 </body>

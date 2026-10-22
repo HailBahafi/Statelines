@@ -42,6 +42,24 @@ export function mountHeader(active: Section): void {
         link("docs", "/docs", "Docs"),
         h("a", { href: "https://github.com/HailBahafi/Statelines", target: "_blank", rel: "noopener" }, "GitHub")),
       theme)));
+  trackNavigation();
+}
+
+/**
+ * Shows a progress bar at the top as soon as a link to another page is followed, so the wait
+ * for the next page never looks like nothing happened. Cleared when the page is shown again
+ * from the back/forward cache.
+ */
+function trackNavigation(): void {
+  document.addEventListener("click", event => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = (event.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+    if (!link || link.target === "_blank" || link.hasAttribute("download")) return;
+    const url = new URL(link.href, location.href);
+    if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
+    document.documentElement.classList.add("navigating");
+  });
+  addEventListener("pageshow", () => document.documentElement.classList.remove("navigating"));
 }
 
 /** The footer every page shares. Mounted into `#foot`. */

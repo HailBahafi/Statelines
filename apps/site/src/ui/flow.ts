@@ -64,8 +64,18 @@ export function attachFlow(card: HTMLElement, instance: FigureInstance, options:
 
   const enter = () => { if (state === "loading") { stop(); cycle(); } };
   const leave = () => { stop(); rest(); };
+  // Opening a card: the figure shows loading while the next page comes in.
+  const open = (event: MouseEvent) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    stop();
+    card.classList.add("opening");
+    instance.update({ state: "loading", speed: 1.4, progress: undefined });
+  };
+  const back = () => { card.classList.remove("opening"); stop(); rest(); };
   card.addEventListener("pointerenter", enter);
   card.addEventListener("pointerleave", leave);
+  card.addEventListener("click", open);
+  addEventListener("pageshow", back);
   rest();
 
   return {
@@ -74,6 +84,8 @@ export function attachFlow(card: HTMLElement, instance: FigureInstance, options:
       stop();
       card.removeEventListener("pointerenter", enter);
       card.removeEventListener("pointerleave", leave);
+      card.removeEventListener("click", open);
+      removeEventListener("pageshow", back);
     },
   };
 }
