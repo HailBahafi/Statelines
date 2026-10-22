@@ -70,10 +70,28 @@ export function envelope(scene: Scene, x: number, y: number, z: number, tone: To
     tone === "base" ? "muted" : tone, { opacity });
 }
 
-/** A person: a body and a head, both upright cylinders. */
+/** The bust of the person standee, in facing (u, v) units: flat base, straight sides, round shoulders. */
+const BUST: [number, number][] = [
+  [-8.5, 0], [8.5, 0],
+  ...Array.from({ length: 11 }, (_, i): [number, number] => {
+    const a = (Math.PI * i) / 10;
+    return [8.5 * Math.cos(a), 5 + 7.5 * Math.sin(a)];
+  }),
+];
+
+/**
+ * A person: the familiar avatar silhouette, a round head over rounded shoulders, cut as a
+ * standee with a little thickness that faces the viewer, standing on a small round base.
+ */
 export function person(scene: Scene, x: number, y: number, z: number, tone: Tone = "base", opacity?: number, scale = 1): void {
-  scene.cylinder(x, y, z, 8 * scale, 13 * scale, tone, opacity);
-  scene.cylinder(x, y, z + 16 * scale, 5.5 * scale, 6 * scale, tone, opacity);
+  const s = scale, t = 1.6 * s, b = 2 * s;
+  scene.cylinder(x, y, z, 7.5 * s, b, tone, opacity);
+  // The cut-out is drawn twice: once pushed back (its thickness), then the face.
+  for (const d of [t, 0]) {
+    const cx = x - d, cy = y - d, cz = z + b;
+    scene.panel(BUST.map(([u, v]) => facing(cx, cy, cz, u * s, v * s)), tone, opacity);
+    scene.panel(faceArc(cx, cy, cz + 19 * s, 5.6 * s, 0, Math.PI * 2, 20), tone, opacity);
+  }
 }
 
 /** A parcel with tape across its lid. */

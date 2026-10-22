@@ -1,72 +1,80 @@
 import { defineFigure } from "../../core/define";
-import { bump, lerp } from "../../engine/math";
-import type { Tone, Vec3 } from "../../engine/scene";
-import { coins, frontArc, person } from "../shapes";
+import { bump, clamp, falloff, lerp } from "../../engine/math";
+import type { Scene, Tone, Vec3 } from "../../engine/scene";
+import { coins, person } from "../shapes";
 
-const VAULT: [number, number] = [-34, -34];
-const VAULT_S = 40;
-const VAULT_H = 30;
-const CREATORS: [number, number][] = [[-38, 56], [12, 12], [52, -38]];
-const EARNED = [3, 4, 2];
-const PAD = 12;
-/** Each creator's stack stands just to the right of their pad. */
-const stackAt = ([x, y]: [number, number]): [number, number] => [x + 15, y - 15];
+/** The bank stands at the back, its portico toward the lower left; creators wait in front of it. */
+const BANK = { x: -34, y: -38, w: 72, d: 50 };
+const FRONT = BANK.y + BANK.d / 2;
+const DOOR: Vec3 = [BANK.x, FRONT + 2, 14];
+const CREATORS: [number, number][] = [[-52, 46], [2, 40], [46, -4]];
+const EARNED = [3, 4, 3];
+/** Each creator's coins stand at their right hand. */
+const stackAt = ([x, y]: [number, number]): [number, number] => [x + 13, y - 13];
 
-/** Coins flowing from a treasury to each creator. Use for creator payouts, commissions and payment runs. */
+/** A bank: steps, a floor, four columns before the wall and door, a beam and a pediment. */
+function bank(scene: Scene, tone: Tone) {
+  const { x, y, w, d } = BANK, wall: Tone = tone === "ghost" ? "ghost" : "base";
+  scene.box(x, y, 4, w + 10, d + 12, 4, wall);
+  scene.box(x, y - 2, 8, w + 4, d + 4, 4, wall);
+  scene.box(x, y - 8, 12, w - 8, d - 18, 30, wall);
+  const face = y - 8 + (d - 18) / 2 + 0.05;
+  if (tone !== "ghost") scene.polyline([[x - 7, face, 12], [x - 7, face, 30], [x + 7, face, 30], [x + 7, face, 12]], "muted");
+  for (const cx of [-27, -9, 9, 27]) scene.cylinder(x + cx, FRONT - 6, 12, 4, 30, tone);
+  const top = 42;
+  scene.box(x, y - 2, top, w + 4, d + 4, 6, tone);
+  // The pediment: a low gable over the front, its ridge running back.
+  const z = top + 6, peak = z + 15, l = x - w / 2 - 2, r = x + w / 2 + 2, b = y - 2 - d / 2 - 2, f = y - 2 + d / 2 + 2;
+  scene.panel([[l, b, z], [x, b, peak], [x, f, peak], [l, f, z]], tone);
+  scene.panel([[r, b, z], [x, b, peak], [x, f, peak], [r, f, z]], tone);
+  scene.panel([[l, f, z], [r, f, z], [x, f, peak]], tone);
+  if (tone !== "ghost") scene.polyline([[l + 12, f + 0.05, z + 2], [r - 12, f + 0.05, z + 2], [x, f + 0.05, peak - 5]], "faint", { closed: true });
+}
+
+/** Coins travelling from a bank to the creators. Use for creator payouts, commissions and payment runs. */
 export const payout = defineFigure({
   name: "Payout",
-  label: "Coins flowing from a treasury to creators",
-  offset: 2,
-  setup: ({ spring }) => ({ paid: CREATORS.map(() => spring(0, 150, 20)), lift: spring(0) }),
+  label: "A bank paying coins out to creators",
+  offset: 6,
+  setup: ({ spring }) => ({
+    paid: CREATORS.map(() => spring(0, 150, 20)),
+    hop: CREATORS.map(() => spring(0, 180, 14)),
+    drop: spring(0, 110, 14),
+  }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake();
     const empty = state === "empty";
-    const [vx, vy] = VAULT, top = 4 + VAULT_H, face = vy + VAULT_S / 2 + 0.05;
     const q = state === "loading" ? ctx.progress(2.4) * 3 : 0;
-    const L = m.lift.to(state === "idle" ? ctx.hover * 10 : 0).value;
+    const g = ctx.ground(4);
+    const D = m.drop.to(state === "error" ? 1 : 0).value;
 
-    scene.box(4, 4, 0, 144, 144, 4, "base");
-
-    // The vault: a block with a round door and a coin waiting on top.
-    scene.box(vx, vy, 4, VAULT_S, VAULT_S, VAULT_H, empty ? "ghost" : state === "loading" ? "hi" : "base");
-    if (!empty) {
-      scene.polyline(frontArc(vx, face, 4 + VAULT_H / 2, 9, 0, Math.PI * 2, 20), "muted");
-      for (const a of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
-        scene.line([vx + 3 * Math.cos(a), face, 19 + 3 * Math.sin(a)], [vx + 7 * Math.cos(a), face, 19 + 7 * Math.sin(a)], "muted");
-      }
-      if (state === "idle") scene.cylinder(vx, vy, top + L, 8, 3, "base");
-    }
+    scene.box(-2, -4, 0, 150, 140, 4, "base");
+    bank(scene, empty ? "ghost" : state === "loading" ? "hi" : "base");
 
     const items: { depth: number; draw: () => void }[] = [];
     CREATORS.forEach(([x, y], k) => {
       const failed = state === "error" && k === 0;
       const done = state === "success" || (state === "error" && !failed) || q > k + 1;
-      const P = m.paid[k]!.to(done ? 1 : 0).value;
+      const P = m.paid[k]!.to(state === "idle" ? 1 / EARNED[k]! : done ? 1 : 0).value;
       const [sx, sy] = stackAt([x, y]);
-      // The route runs along the floor from the vault's foot to the creator's pad.
-      const dx = x - vx, dy = y - vy, len = Math.hypot(dx, dy), ux = dx / len, uy = dy / len;
-      const from: Vec3 = [vx + ux * 30, vy + uy * 30, 4.05], to: Vec3 = [x - ux * (PAD + 3), y - uy * (PAD + 3), 4.05];
+      // Paid creators jump for joy; in idle the one under the pointer looks up.
+      const jump = state === "success" ? 5 : state === "idle" ? 6 * ctx.hover * falloff(Math.hypot(x - g.x, y - g.y), 22) : 0;
+      const H = m.hop[k]!.to(jump).value;
+      const tone: Tone = empty ? "ghost" : failed ? "err" : state === "success" ? "ok" : "base";
+      items.push({ depth: x + y, draw: () => person(scene, x + (failed ? shake : 0), y, 4 + H, tone, undefined, 1.2) });
+      const stack = Math.round(EARNED[k]! * clamp(P));
+      if (stack && !empty) items.push({ depth: sx + sy, draw: () => coins(scene, sx, sy, 4, stack, "base", state === "success" ? "ok" : "base", 8) });
       if (failed) {
-        const mid = (30 + len - PAD - 3) / 2;
-        scene.line(from, [vx + ux * (mid - 14), vy + uy * (mid - 14), 4.05], "err");
-        scene.line([vx + ux * (mid + 14), vy + uy * (mid + 14), 4.05], to, "err");
-      } else if (!empty) {
-        scene.line(from, to, P > 0.5 ? (state === "success" ? "ok" : "muted") : "faint");
+        // The payment never arrived: the coin lies on the floor short of the creator.
+        const f = 0.55, cx = lerp(DOOR[0], sx, f), cy = lerp(DOOR[1], sy, f);
+        items.push({ depth: cx + cy, draw: () => scene.cylinder(cx, cy, lerp(DOOR[2], 4, clamp(D)), 7, 3, "err") });
       }
-      const tone: Tone = empty ? "ghost" : failed ? "err" : done && state === "success" ? "ok" : "base";
-      items.push({ depth: x + y, draw: () => {
-        scene.cylinder(x, y, 4, PAD, 3, empty ? "ghost" : "base");
-        person(scene, x + (failed ? shake : 0), y, 7, tone);
-      } });
-      const stack = Math.round(EARNED[k]! * P);
-      if (stack) items.push({ depth: sx + sy, draw: () => coins(scene, sx, sy, 4, stack, "base", state === "success" ? "ok" : "base", 8) });
       if (state === "loading" && q > k && q < k + 1) {
-        const f = q - k, z = lerp(top, 4 + EARNED[k]! * 5, f) + 34 * bump(f);
-        items.push({ depth: 998, draw: () => scene.cylinder(lerp(vx, sx, f), lerp(vy, sy, f), z, 8, 3, "hi") });
+        const f = q - k, z = lerp(DOOR[2], 4 + EARNED[k]! * 5, f) + 30 * bump(f);
+        items.push({ depth: 998, draw: () => scene.cylinder(lerp(DOOR[0], sx, f), lerp(DOOR[1], sy, f), z, 7, 3, "hi") });
       }
     });
     items.sort((a, b) => a.depth - b.depth).forEach(i => i.draw());
-
   },
 });
