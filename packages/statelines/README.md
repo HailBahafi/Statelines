@@ -8,8 +8,8 @@ Uploading a file, paying, typing a verification code, waiting on an AI reply, ma
 
 - **One prop that means something.** `idle`, `loading`, `success`, `error`, `empty`. Wire it to your app's real state and the figure tells the story.
 - **Colour only when it matters.** Everything is grey line until a state means something: green for success, red for error.
-- **Yours to adjust.** Real progress, item counts, speed, colours, stroke, marks and pointer, all as options. For deeper changes, copy a figure's file: every one is a short, readable TypeScript module.
-- **Light.** Zero dependencies, about 16 KB gzipped for all 101 figures.
+- **Yours to adjust.** Real progress, item counts, speed, colours, stroke and pointer, all as options. For deeper changes, copy a figure's file: every one is a short, readable TypeScript module.
+- **Light.** Zero dependencies. Importing one figure adds about 8 KB gzipped; all 101 together are about 83 KB.
 - **Idle means idle.** Every figure on the page shares one animation frame, and it stops when they have all settled. Off-screen figures cost nothing.
 - **Accessible.** Each figure is an image with a description you can replace, and `prefers-reduced-motion` is respected.
 
@@ -92,7 +92,7 @@ export function NoResults({ onClear }: { onClear: () => void }) {
 | `speed` | `number` 0…4 | `1` | Animation speed. |
 | `colors` | `{ plate, hi, edge, mid, lo, ok, err }` | — | Colours for this figure only, on top of the theme. |
 | `stroke` | `number` | `1` | Stroke width in CSS pixels. |
-| `marks` | `boolean` | `true` | Draw the tick on success and the cross on error. |
+| `marks` | `boolean` | `true` | Kept for compatibility. Figures no longer draw a tick or a cross, so it has no effect. |
 | `interactive` | `boolean` | `true` | Answer the pointer. |
 
 ### Real progress
@@ -170,10 +170,10 @@ export const beacon = defineFigure({
   setup: ({ spring }) => ({ lift: spring(0) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
-    const lift = m.lift.to(ctx.hover * 10).value;
+    // Success lifts the beacon clear of its plinth: a change of form, not only of colour.
+    const lift = m.lift.to(state === "success" ? 14 : ctx.hover * 10).value;
     scene.box(0, 0, 0, 80, 80, 6);
     scene.cylinder(0, 0, 6 + lift, 14, 40, state === "loading" ? "hi" : ctx.verdict());
-    if (state === "success") scene.check(0, 0, 46 + lift, "ok", ctx.fade());
   },
 });
 ```
