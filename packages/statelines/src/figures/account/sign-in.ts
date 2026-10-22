@@ -10,7 +10,7 @@ const WALL = { inner: 36, outer: 74, h: 92, d: 6 };
 const MAT = { x: 10, y: 30, w: 46, d: 30 };
 
 /** A door that opens. Use for sign in, sign up, joining and access granted. */
-export const signIn = defineFigure({
+export const signIn = /*#__PURE__*/ defineFigure({
   name: "SignIn",
   label: "A door opening",
   offset: 18,

@@ -55,7 +55,7 @@ function tube(scene: Scene, x: number, y0: number, y1: number, cz: number, r: nu
 }
 
 /** A mood dial with the needle at a feeling. Use for mood check-ins, surveys and sentiment. */
-export const mood = defineFigure({
+export const mood = /*#__PURE__*/ defineFigure({
   name: "Mood",
   label: "A mood dial with a needle",
   offset: 20,
@@ -114,7 +114,7 @@ export const mood = defineFigure({
 });
 
 /** A moon and stars for sleep, drifting. Use for sleep tracking, bedtime and night mode. */
-export const sleepMoon = defineFigure({
+export const sleepMoon = /*#__PURE__*/ defineFigure({
   name: "SleepMoon",
   label: "A crescent moon with drifting stars",
   offset: 16,
@@ -168,7 +168,7 @@ export const sleepMoon = defineFigure({
 });
 
 /** A habit streak of days being filled in. Use for streaks, habits and daily goals. `count`: days, 4–10. */
-export const streak = defineFigure({
+export const streak = /*#__PURE__*/ defineFigure({
   name: "Streak",
   label: "A row of days filling in as a streak",
   offset: 14,
@@ -249,7 +249,7 @@ const TORSO: UV[] = [[-12, 10], [12, 10], [14, 30], [16, 38], [12, 43], [-12, 43
 const ARM: UV[] = [[13, 43], [19, 41], [31, 24], [35, 10], [29, 10], [25, 22], [14, 34]];
 
 /** A person meditating on a cushion inside a breathing circle. Use for breathing exercises, meditation and calm moments. */
-export const breathe = defineFigure({
+export const breathe = /*#__PURE__*/ defineFigure({
   name: "Breathe",
   label: "A person meditating cross-legged on a cushion inside a circle that grows and shrinks with the breath",
   offset: 30,
@@ -315,7 +315,7 @@ export const breathe = defineFigure({
 });
 
 /** A water glass that fills. Use for hydration, drinks and water goals. */
-export const hydrate = defineFigure({
+export const hydrate = /*#__PURE__*/ defineFigure({
   name: "Hydrate",
   label: "A glass filling with water",
   offset: 16,
@@ -401,7 +401,7 @@ function beat(t: number): number {
 }
 
 /** A heartbeat trace drawn across a bedside monitor. Use for heart rate, vitals and health monitoring. */
-export const pulse = defineFigure({
+export const pulse = /*#__PURE__*/ defineFigure({
   name: "Pulse",
   label: "A heartbeat trace drawing across",
   offset: 12,
@@ -478,7 +478,7 @@ function drawHill(scene: Scene, cx: number, cy: number, R: number, H: number, ji
 }
 
 /** A sun rising over the sea between two hills. Use for morning routines, daily summaries and good-morning states. */
-export const sunrise = defineFigure({
+export const sunrise = /*#__PURE__*/ defineFigure({
   name: "Sunrise",
   label: "A sun rising over the sea between two hills, with rays and its reflection on the water",
   offset: 10,
@@ -543,7 +543,7 @@ export const sunrise = defineFigure({
 });
 
 /** A bed with a tucked blanket, for bedtime and rest reminders. Use for bedtime, rest and sleep settings. */
-export const rest = defineFigure({
+export const rest = /*#__PURE__*/ defineFigure({
   name: "Rest",
   label: "A bed with a blanket pulled up",
   offset: 10,
@@ -596,7 +596,7 @@ export const rest = defineFigure({
 });
 
 /** A medal with a ribbon, for badges and achievements. Use for rewards, badges and milestones reached. */
-export const badge = defineFigure({
+export const badge = /*#__PURE__*/ defineFigure({
   name: "Badge",
   label: "A medal with a ribbon",
   offset: 10,
@@ -657,7 +657,7 @@ export const badge = defineFigure({
 });
 
 /** A journal page being written, with a gentle heart on it. Use for journaling, gratitude and reflection prompts. */
-export const journal = defineFigure({
+export const journal = /*#__PURE__*/ defineFigure({
   name: "Journal",
   label: "A journal page with a heart",
   offset: 14,

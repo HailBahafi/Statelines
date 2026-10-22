@@ -12,7 +12,7 @@ const FACE = FRONT + 1.5;
 const BELL = 0.72;
 
 /** An alarm clock counting time. Use for sessions, timeouts, scheduling and anything that waits on time. */
-export const session = defineFigure({
+export const session = /*#__PURE__*/ defineFigure({
   name: "Session",
   label: "An alarm clock with bells counting time",
   offset: 4,

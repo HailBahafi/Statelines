@@ -9,7 +9,7 @@ const WALL_TOP = 19;
 const SCALE = 1.5;
 
 /** Letters drop into a tray. Use for inboxes, queues and received items. `count`: letters at rest, 0–6. */
-export const inbox = defineFigure({
+export const inbox = /*#__PURE__*/ defineFigure({
   name: "Inbox",
   label: "Letters dropping into a tray",
   offset: -6,

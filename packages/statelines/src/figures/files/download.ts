@@ -48,7 +48,7 @@ function file(scene: Scene, x: number, y: number, z: number, rot: number, tone: 
 }
 
 /** A file drops out of the cloud into a folder while the bar fills. Use for downloads and exports. */
-export const download = defineFigure({
+export const download = /*#__PURE__*/ defineFigure({
   name: "Download",
   label: "A file dropping from a cloud into a folder",
   offset: 12,

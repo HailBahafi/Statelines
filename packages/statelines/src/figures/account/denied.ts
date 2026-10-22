@@ -9,7 +9,7 @@ const THICK = 3.5;
 const LANE_X = 2;
 
 /** A barrier arm at a gate. Use for permissions, access denied, paywalls and approvals. */
-export const denied = defineFigure({
+export const denied = /*#__PURE__*/ defineFigure({
   name: "Denied",
   label: "A barrier arm at a gate",
   offset: 12,

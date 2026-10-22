@@ -15,7 +15,7 @@ const at = (p: number): Vec3 => [
 ];
 
 /** An envelope flies to the other side. Use for sent messages, emails and invitations. */
-export const send = defineFigure({
+export const send = /*#__PURE__*/ defineFigure({
   name: "Send",
   label: "An envelope flying from a tray into a mailbox",
   offset: 14,

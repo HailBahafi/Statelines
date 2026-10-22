@@ -22,7 +22,7 @@ const FACE = BOARD.x + 2.05;
 const at = (u: number, v: number): Vec3 => [FACE, -u, 12 + v];
 
 /** A little spend goes into a campaign and more comes out. Use for ROI, campaign results and attribution. */
-export const roi = defineFigure({
+export const roi = /*#__PURE__*/ defineFigure({
   name: "Roi",
   label: "Coin columns rising in front of a chart with an upward trend",
   offset: 18,

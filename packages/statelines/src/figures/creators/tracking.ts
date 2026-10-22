@@ -54,7 +54,7 @@ function eye(scene: Scene, u: number, z: number, tone: Tone): void {
 }
 
 /** A dashboard on a laptop: published posts with their view bars rising as a tracker passes. Use for campaign tracking and post monitoring. `count`: posts, 3–7. */
-export const tracking = defineFigure({
+export const tracking = /*#__PURE__*/ defineFigure({
   name: "Tracking",
   label: "View bars rising over posts on a laptop dashboard",
   offset: 16,

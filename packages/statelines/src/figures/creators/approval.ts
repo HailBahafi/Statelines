@@ -53,7 +53,7 @@ function stamp(scene: Scene, x: number, y: number, z: number, tone: Tone) {
 }
 
 /** A post on the desk and a rubber stamp that lands on it. Use for content approvals, reviews and publishing workflows. */
-export const approval = defineFigure({
+export const approval = /*#__PURE__*/ defineFigure({
   name: "Approval",
   label: "A rubber stamp landing on a post to approve it",
   offset: 2,

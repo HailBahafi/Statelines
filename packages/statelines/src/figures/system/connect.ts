@@ -18,7 +18,7 @@ const OUT_OF_PLATE: Vec3 = [-40, 62, 4.3];
 const R = (v: Vec3, a: number): Vec3 => rotX(v, [0, 0, 0], a);
 
 /** A plug goes into a wall socket. Use for integrations, linked accounts and pairing. */
-export const connect = defineFigure({
+export const connect = /*#__PURE__*/ defineFigure({
   name: "Connect",
   label: "A plug going into a wall socket",
   offset: 18,

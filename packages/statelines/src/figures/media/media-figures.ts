@@ -12,7 +12,7 @@ const TV_FACE = TV.y + TV.d / 2;
 const HILLS: [number, number][] = [[-50, 40], [-32, 56], [-18, 46], [2, 66], [24, 46], [36, 52], [50, 44]];
 
 /** A video frame with a play button that is pressed. Use for video players, reels and watch actions. */
-export const play = defineFigure({
+export const play = /*#__PURE__*/ defineFigure({
   name: "Play",
   label: "A video frame with a play button",
   offset: 14,
@@ -87,7 +87,7 @@ const SLATE_FACE = SLATE.x + SLATE.t / 2;
 const HINGE = { u: -SLATE.w / 2 + 2, z: 4 + SLATE.h + 10 };
 
 /** A clapperboard snapping shut. Use for video rendering, editing and scene exports. */
-export const clap = defineFigure({
+export const clap = /*#__PURE__*/ defineFigure({
   name: "Clap",
   label: "A clapperboard snapping shut",
   offset: 24,
@@ -176,7 +176,7 @@ function roundRect(cu: number, cv: number, a: number, b: number, r: number, step
 }
 
 /** A voice recorder with a waveform and a record button. Use for audio, podcasts, voice notes and sound levels. */
-export const waveform = defineFigure({
+export const waveform = /*#__PURE__*/ defineFigure({
   name: "Waveform",
   label: "A voice recorder showing a waveform with a playhead and a record button",
   offset: 22,
@@ -301,7 +301,7 @@ function frame(scene: Scene, f: Hang, tone: Tone, crack = 0): void {
 }
 
 /** Framed photos on a wall, and one is picked. Use for galleries, photo uploads and media libraries. `count`: photos, 2–9. */
-export const gallery = defineFigure({
+export const gallery = /*#__PURE__*/ defineFigure({
   name: "Gallery",
   label: "Framed photos hanging on a wall, one picked",
   offset: 10,
@@ -375,7 +375,7 @@ const PIVOT = { x: 42, y: -30, z: 30 };
 const ARM = 50;
 
 /** A record spinning on a turntable with its tone arm. Use for music, playlists, streaming and sound loading. */
-export const vinyl = defineFigure({
+export const vinyl = /*#__PURE__*/ defineFigure({
   name: "Vinyl",
   label: "A record spinning on a turntable",
   offset: 14,
@@ -443,7 +443,7 @@ const starPts = (cu: number, cv: number, s = 1): [number, number][] =>
   });
 
 /** A star rating being filled in. Use for ratings, reviews, scores and feedback. `count`: stars, 3–5. */
-export const rating = defineFigure({
+export const rating = /*#__PURE__*/ defineFigure({
   name: "Rating",
   label: "A row of stars being filled",
   offset: 25,
@@ -518,7 +518,7 @@ const heartAt = (t: number): [number, number] => [
 const CRACK: [number, number][] = [[0, 5], [2.4, 1], [-2, -3.5], [2.2, -8], [-1.2, -12.5], [0, -17]];
 
 /** A heart beating while a message is liked. Use for likes, favourites and reactions. */
-export const like = defineFigure({
+export const like = /*#__PURE__*/ defineFigure({
   name: "Like",
   label: "A heart beating",
   offset: 18,
@@ -583,7 +583,7 @@ const REPLY = { au: -22, az: 68, l: -14, r: 40, z: 62, h: 14 };
 const NEW = { au: -22, az: 46, l: -14, r: 32, z: 40, h: 14 };
 
 /** A comment bubble with a reply thread. Use for comments, replies and discussion threads. */
-export const thread = defineFigure({
+export const thread = /*#__PURE__*/ defineFigure({
   name: "Thread",
   label: "A comment with replies beneath",
   offset: 30,
@@ -661,7 +661,7 @@ const SET = { x: -30, y: 22, t: 8, w: 62, z: 12, h: 44 };
 const SET_FACE = SET.x + SET.t / 2;
 
 /** A live stream: an antenna sending waves toward a screen. Use for live streams, broadcasts and real-time status. */
-export const live = defineFigure({
+export const live = /*#__PURE__*/ defineFigure({
   name: "Live",
   label: "An antenna sending waves to a screen",
   offset: 22,

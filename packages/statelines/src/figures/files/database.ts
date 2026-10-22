@@ -6,7 +6,7 @@ const R = 40;
 const H = 14;
 
 /** Three disks of a database. Use for saving, syncing and storage. */
-export const database = defineFigure({
+export const database = /*#__PURE__*/ defineFigure({
   name: "Database",
   label: "Three stacked disks of a database",
   offset: 10,

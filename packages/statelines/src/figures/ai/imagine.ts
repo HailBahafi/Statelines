@@ -21,7 +21,7 @@ const PENDING = new Set([0, 1, 6]);
 const GLITCH_ROW = 2;
 
 /** An image resolves tile by tile. Use for image generation, rendering and previews. */
-export const imagine = defineFigure({
+export const imagine = /*#__PURE__*/ defineFigure({
   name: "Imagine",
   label: "An image resolving tile by tile",
   offset: 36,

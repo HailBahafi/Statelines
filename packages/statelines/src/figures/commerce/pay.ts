@@ -36,7 +36,7 @@ function card(scene: Scene, [cx, cy, cz]: Vec3, a: number, yaw: number, tone: To
 }
 
 /** A bank card taps a card terminal and a receipt prints. Use for checkout, payments and subscriptions. */
-export const pay = defineFigure({
+export const pay = /*#__PURE__*/ defineFigure({
   name: "Pay",
   label: "A bank card tapping a card terminal",
   offset: 12,

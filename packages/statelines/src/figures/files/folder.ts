@@ -7,7 +7,7 @@ const BASE = 4;
 const FLOOR = BASE + 6;
 
 /** Files slide into an open folder. Use for projects, collections and empty folders. */
-export const folder = defineFigure({
+export const folder = /*#__PURE__*/ defineFigure({
   name: "Folder",
   label: "Files sliding into an open folder",
   offset: 4,

@@ -73,7 +73,7 @@ const flatRound = (cx: number, cy: number, z: number, a: number, b: number, r: n
 const CASE = { x: 38, y: 16, a: 32, b: 20, r: 15, h: 26, lid: 11 };
 
 /** A phone pairing with a case of earbuds. Use for pairing, bluetooth and device setup. */
-export const pair = defineFigure({
+export const pair = /*#__PURE__*/ defineFigure({
   name: "Pair",
   label: "A phone pairing with an open case of earbuds",
   offset: 14,
@@ -171,7 +171,7 @@ export const pair = defineFigure({
 });
 
 /** A battery charging in its cradle. Use for battery status, charging and power. */
-export const battery = defineFigure({
+export const battery = /*#__PURE__*/ defineFigure({
   name: "Battery",
   label: "A battery filling up in its charger",
   offset: 14,
@@ -240,7 +240,7 @@ export const battery = defineFigure({
 });
 
 /** A smart speaker with waves. Use for voice assistants, audio output and smart-home devices. */
-export const speaker = defineFigure({
+export const speaker = /*#__PURE__*/ defineFigure({
   name: "Speaker",
   label: "A smart speaker sending sound waves",
   offset: 10,
@@ -293,7 +293,7 @@ export const speaker = defineFigure({
 });
 
 /** A smartwatch with activity rings closing. Use for wearables, activity and fitness. */
-export const watch = defineFigure({
+export const watch = /*#__PURE__*/ defineFigure({
   name: "Watch",
   label: "A smartwatch with activity rings",
   offset: 16,
@@ -348,7 +348,7 @@ export const watch = defineFigure({
 });
 
 /** A camera with a lens that iris-opens. Use for photo capture, camera permission and selfies. */
-export const camera = defineFigure({
+export const camera = /*#__PURE__*/ defineFigure({
   name: "Camera",
   label: "A camera lens opening",
   offset: 18,
@@ -416,7 +416,7 @@ export const camera = defineFigure({
 });
 
 /** A microphone on a desk stand feeding a level meter. Use for voice recording, transcription and audio input. */
-export const mic = defineFigure({
+export const mic = /*#__PURE__*/ defineFigure({
   name: "Mic",
   label: "A microphone picking up sound",
   offset: 20,
@@ -481,7 +481,7 @@ export const mic = defineFigure({
 });
 
 /** A printer with a page sliding out. Use for printing, exports and physical output. */
-export const printer = defineFigure({
+export const printer = /*#__PURE__*/ defineFigure({
   name: "Printer",
   label: "A printer with a page sliding out",
   offset: 20,
@@ -549,7 +549,7 @@ export const printer = defineFigure({
 
 
 /** A server rack: blades that light up one at a time. Use for hosting, deploy health and infrastructure. `count`: blades, 3–8. */
-export const rack = defineFigure({
+export const rack = /*#__PURE__*/ defineFigure({
   name: "Rack",
   label: "A server rack with blades lighting up",
   offset: 25,
@@ -608,7 +608,7 @@ export const rack = defineFigure({
 });
 
 /** A satellite dish pointing at a signal. Use for connectivity, reconnecting and global coverage. */
-export const satellite = defineFigure({
+export const satellite = /*#__PURE__*/ defineFigure({
   name: "Satellite",
   label: "A dish locking onto a signal",
   offset: 22,
@@ -695,7 +695,7 @@ function syncArrow(a0: number, span = 2.3, R = 14, r = 9): [number, number][] {
 }
 
 /** A laptop and a phone syncing through a cloud. Use for push notifications and background sync. */
-export const sync = defineFigure({
+export const sync = /*#__PURE__*/ defineFigure({
   name: "Sync",
   label: "A laptop and a phone syncing through a cloud with turning arrows",
   offset: 16,
@@ -781,7 +781,7 @@ function tbox(scene: Scene, f: (p: Vec3) => Vec3, cx: number, cy: number, z: num
 }
 
 /** A chip being inserted into a board. Use for hardware setup, integrations and dev kits. */
-export const chip = defineFigure({
+export const chip = /*#__PURE__*/ defineFigure({
   name: "Chip",
   label: "A chip seating into a board",
   offset: 14,
@@ -847,7 +847,7 @@ export const chip = defineFigure({
 });
 
 /** A mouse and cursor clicking. Use for click-through tutorials, demos and interactive guides. */
-export const cursor = defineFigure({
+export const cursor = /*#__PURE__*/ defineFigure({
   name: "Cursor",
   label: "A cursor clicking a button",
   offset: 22,

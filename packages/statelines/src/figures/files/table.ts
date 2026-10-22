@@ -15,7 +15,7 @@ const SLAB = 4 + 4;
 const HIGH = 40;
 
 /** A spreadsheet window whose rows arrive one by one. Use for imports, CSV uploads and data syncs. `count`: rows, 1–8. */
-export const table = defineFigure({
+export const table = /*#__PURE__*/ defineFigure({
   name: "Table",
   label: "Rows arriving in a spreadsheet window",
   offset: 2,

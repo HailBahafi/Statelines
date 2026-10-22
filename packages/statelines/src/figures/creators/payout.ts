@@ -32,7 +32,7 @@ function bank(scene: Scene, tone: Tone) {
 }
 
 /** Coins travelling from a bank to the creators. Use for creator payouts, commissions and payment runs. */
-export const payout = defineFigure({
+export const payout = /*#__PURE__*/ defineFigure({
   name: "Payout",
   label: "A bank paying coins out to creators",
   offset: 6,

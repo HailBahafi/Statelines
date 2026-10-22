@@ -16,7 +16,7 @@ const DIAG: Vec3 = (() => { const dx = RX - TOWER.x, dy = RY - TOWER.y, l = Math
 const BREAK = 22;
 
 /** A rocket lifts off its launch pad. Use for deploys, publishing and builds. `count`: stages, 2–6. */
-export const deploy = defineFigure({
+export const deploy = /*#__PURE__*/ defineFigure({
   name: "Deploy",
   label: "A multi-stage rocket lifting off its launch pad",
   offset: 18,

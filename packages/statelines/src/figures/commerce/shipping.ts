@@ -61,7 +61,7 @@ function house(scene: Scene, tone: Tone): void {
 }
 
 /** A delivery truck drives the road from a depot to a home. Use for shipping, tracking and deliveries. */
-export const shipping = defineFigure({
+export const shipping = /*#__PURE__*/ defineFigure({
   name: "Shipping",
   label: "A delivery truck driving from a depot to a home",
   offset: -10,

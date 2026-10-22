@@ -47,7 +47,7 @@ function drawKey(scene: Scene, at: (s: number, w: number, n: number) => Vec3, to
 }
 
 /** A padlock that opens. Use for locked content, access control and secure areas. */
-export const lock = defineFigure({
+export const lock = /*#__PURE__*/ defineFigure({
   name: "Lock",
   label: "A padlock springing open",
   offset: 14,
@@ -146,7 +146,7 @@ function shieldHalf(k: number): P2[] {
 }
 
 /** A shield whose layers light up, or that splits in two. Use for protection, security status and checks. */
-export const shield = defineFigure({
+export const shield = /*#__PURE__*/ defineFigure({
   name: "Shield",
   label: "A shield standing guard",
   offset: 30,
@@ -213,7 +213,7 @@ export const shield = defineFigure({
 });
 
 /** A key turning in a lock, with the key's teeth drawn. Use for sign in, passwords and reset flows. */
-export const key = defineFigure({
+export const key = /*#__PURE__*/ defineFigure({
   name: "Key",
   label: "A key turning in a lock",
   offset: 26,
@@ -271,7 +271,7 @@ export const key = defineFigure({
 });
 
 /** A safe with a dial spinning. Use for vaults, secure storage and encrypted data. */
-export const vault = defineFigure({
+export const vault = /*#__PURE__*/ defineFigure({
   name: "Vault",
   label: "A safe door with a spinning dial",
   offset: 14,
@@ -353,7 +353,7 @@ export const vault = defineFigure({
 });
 
 /** A fingerprint being read on a reader's glass. Use for biometric sign in and device trust. */
-export const fingerprint = defineFigure({
+export const fingerprint = /*#__PURE__*/ defineFigure({
   name: "Fingerprint",
   label: "A fingerprint being scanned",
   offset: 34,
@@ -406,7 +406,7 @@ export const fingerprint = defineFigure({
 });
 
 /** A brick firewall with packets bouncing off. Use for network protection, blocked traffic and firewall rules. */
-export const firewall = defineFigure({
+export const firewall = /*#__PURE__*/ defineFigure({
   name: "Firewall",
   label: "A wall stopping packets",
   offset: 16,
@@ -506,7 +506,7 @@ const THUMB: P2[] = (() => {
 const CUFF: P2[] = [[-9, -16.5], [0, -16.5], [0, 16.5], [-9, 16.5]];
 
 /** Two hands meeting in a handshake. Use for OAuth, connecting accounts and trusted links. */
-export const handshake = defineFigure({
+export const handshake = /*#__PURE__*/ defineFigure({
   name: "Handshake",
   label: "Two hands in sleeves reaching in from each side and clasping",
   offset: 18,
@@ -586,7 +586,7 @@ export const handshake = defineFigure({
 });
 
 /** A breach alert: a radar sweep finds a threat. Use for security alerts, monitoring and incidents. */
-export const radar = defineFigure({
+export const radar = /*#__PURE__*/ defineFigure({
   name: "Radar",
   label: "A radar sweep finding a threat",
   offset: 30,
@@ -665,7 +665,7 @@ export const radar = defineFigure({
 const PEN: P2[] = [[0, 0], [5, -1.9], [33, -1.9], [36, -1.2], [36, 1.2], [33, 1.9], [5, 1.9]];
 
 /** A checklist on a clipboard, its security steps completed one by one. Use for onboarding security, audits and compliance. `count`: items, 2–5. */
-export const compliance = defineFigure({
+export const compliance = /*#__PURE__*/ defineFigure({
   name: "Compliance",
   label: "A clipboard checklist being filled in",
   offset: 22,
@@ -748,7 +748,7 @@ export const compliance = defineFigure({
 });
 
 /** A password field with its characters masked, and one revealed. Use for password entry, strength and masked input. */
-export const password = defineFigure({
+export const password = /*#__PURE__*/ defineFigure({
   name: "Password",
   label: "A masked password field",
   offset: 22,

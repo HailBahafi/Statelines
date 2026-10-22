@@ -18,7 +18,7 @@ const at = (u: number, v: number, front = 0): Vec3 => {
 };
 
 /** A page writes itself line by line. Use for AI replies, generated drafts and summaries. */
-export const write = defineFigure({
+export const write = /*#__PURE__*/ defineFigure({
   name: "Write",
   label: "A page writing itself line by line",
   offset: 30,

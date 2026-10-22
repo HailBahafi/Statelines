@@ -10,7 +10,7 @@ const FULL = 74;
 const LINES = [34, 22, 30, 18, 34, 26, 20];
 
 /** A receipt prints and is stamped paid. Use for invoices, receipts, approvals and paid states. */
-export const receipt = defineFigure({
+export const receipt = /*#__PURE__*/ defineFigure({
   name: "Receipt",
   label: "A receipt printing and being stamped paid",
   offset: 4,

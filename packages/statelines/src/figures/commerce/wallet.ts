@@ -89,7 +89,7 @@ const SLIPPED = [62, 46] as const;
 const POCKETS = [38, 30, 22];
 
 /** An open wallet with coins stacking beside it. Use for balances, credits, payouts and rewards. `count`: coins, 1–10. */
-export const wallet = defineFigure({
+export const wallet = /*#__PURE__*/ defineFigure({
   name: "Wallet",
   label: "An open wallet with coins stacking into a balance",
   offset: 10,

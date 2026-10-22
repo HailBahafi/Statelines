@@ -70,7 +70,7 @@ function megaphone(scene: Scene, tone: Tone, lift: number) {
 }
 
 /** One brand messaging many creators at once. Use for outreach, campaigns invites and bulk messaging. `count`: creators, 2–6. */
-export const outreach = defineFigure({
+export const outreach = /*#__PURE__*/ defineFigure({
   name: "Outreach",
   label: "A megaphone sending envelopes out to several creators",
   offset: 10,

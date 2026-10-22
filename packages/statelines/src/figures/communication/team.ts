@@ -13,7 +13,7 @@ const OUT = R + 22;
 const angle = (k: number, seats: number, spin: number) => -Math.PI * 0.75 + (k * Math.PI * 2) / seats + spin;
 
 /** A team meeting around a table. Use for teams, invites, members and sharing. `count`: seats, 2–8. */
-export const team = defineFigure({
+export const team = /*#__PURE__*/ defineFigure({
   name: "Team",
   label: "People taking their seats around a team table",
   offset: 4,

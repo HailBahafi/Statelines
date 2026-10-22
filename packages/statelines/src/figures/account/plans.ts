@@ -28,7 +28,7 @@ const D = 5;
 const R = 6;
 
 /** Three plans, one chosen. Use for pricing, plan pickers, upgrades and tiers. */
-export const plans = defineFigure({
+export const plans = /*#__PURE__*/ defineFigure({
   name: "Plans",
   label: "A pricing page with three plan cards, one chosen",
   offset: 15,

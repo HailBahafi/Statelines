@@ -89,7 +89,7 @@ function bell(a: number): { body: Vec3[]; front: (k: number) => Vec3[] } {
 }
 
 /** A bell rings and notifications land on a stack. Use for alerts, activity feeds and unread counts. `count`: cards at rest, 0–4. */
-export const alerts = defineFigure({
+export const alerts = /*#__PURE__*/ defineFigure({
   name: "Alerts",
   label: "A ringing bell over a stack of notifications",
   offset: 8,

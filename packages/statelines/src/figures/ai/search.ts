@@ -23,7 +23,7 @@ const WORDS = [34, 26, 30];
 const LENS = 26, RIM = 17;
 
 /** A lens over a list of results. Use for search, filters and "no results". */
-export const search = defineFigure({
+export const search = /*#__PURE__*/ defineFigure({
   name: "Search",
   label: "A lens moving over a list of results",
   offset: 26,

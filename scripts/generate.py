@@ -5,7 +5,7 @@ Rebuilds the generated parts of statelines from the figure sources:
   - packages/statelines/test/lists.ts              which figures show progress and accept a count
 
 Run from the repository root:  python3 scripts/generate.py
-Figures are found by their `export const name = defineFigure(...)` line; the `/** ... */` comment
+Figures are found by their `export const name = /*#__PURE__*/ defineFigure(...)` line; the `/** ... */` comment
 directly above it supplies the gallery's use line ("Use for ..."), and `ctx.count(` / `ctx.progress(` /
 `ctx.determinate` in a figure's body decide its flags.
 """
@@ -28,9 +28,9 @@ def scan():
             continue
         s = open(path, encoding="utf-8").read()
         shelf = os.path.relpath(path, SRC).split(os.sep)[0]
-        for m in re.finditer(r"(?:/\*\* (.+?) \*/\s*)?export const (\w+) = defineFigure", s):
+        for m in re.finditer(r"(?:/\*\* (.+?) \*/\s*)?export const (\w+) = (?:/\*#__PURE__\*/ )?defineFigure", s):
             rest = s[m.end():]
-            nxt = re.search(r"\n(?:/\*\*[^\n]*\*/\n)?export const \w+ = defineFigure", rest)
+            nxt = re.search(r"\n(?:/\*\*[^\n]*\*/\n)?export const \w+ = (?:/\*#__PURE__\*/ )?defineFigure", rest)
             body = rest[: nxt.start()] if nxt else rest
             label = re.search(r'label: "([^"]+)"', body)
             figs[m.group(2)] = {
@@ -65,10 +65,10 @@ COUNT = {"alerts": (0, 4), "analytics": (3, 10), "archive": (1, 4), "cart": (1, 
 def main():
     figs = scan()
     # React exports
-    react = ['import * as figures from "../figures";', 'import { createComponent } from "./create-component";', "",
+    react = ['import * as figures from "../index";', 'import { createComponent } from "./create-component";', "",
              'export { createComponent, type FigureComponent, type FigureProps } from "./create-component";', ""]
     for name in figs:
-        react.append(f"export const {name[0].upper() + name[1:]} = createComponent(figures.{name});")
+        react.append(f"export const {name[0].upper() + name[1:]} = /*#__PURE__*/ createComponent(figures.{name});")
     open(os.path.join(ROOT, "packages/statelines/src/react/index.ts"), "w").write("\n".join(react) + "\n")
 
     # Catalog

@@ -33,7 +33,7 @@ function card(scene: Scene, c: Card) {
 }
 
 /** Followers pass a scanner and the fake ones drop away. Use for audience audits, fake follower checks and fraud. */
-export const audit = defineFigure({
+export const audit = /*#__PURE__*/ defineFigure({
   name: "Audit",
   label: "A magnifier checking profile cards and flicking the fakes into a bin",
   offset: 8,

@@ -16,14 +16,16 @@ export default defineConfig([
     dts: true,
     clean: true,
     treeshake: true,
-    minify: true,
+    // Not minified: minifying strips the /*#__PURE__*/ marks on each figure, and without them an
+    // app that imports one figure would bundle all of them. Apps minify their own bundles.
+    minify: false,
     target: "es2020",
   },
   {
     entry: { "react/index": "src/react/index.ts" },
     format: ["esm"],
     dts: true,
-    minify: true,
+    minify: false,
     target: "es2020",
     external: ["react"],
     esbuildPlugins: [shareCore],

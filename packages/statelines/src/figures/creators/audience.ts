@@ -16,7 +16,7 @@ const CROWD = ROWS.flatMap(({ r, n }, row) => Array.from({ length: n }, (_, k) =
 }));
 
 /** A creator on a stage facing a crowd of followers. Use for audience insights and demographics. */
-export const audience = defineFigure({
+export const audience = /*#__PURE__*/ defineFigure({
   name: "Audience",
   label: "A creator on a stage with a ring light, facing a crowd",
   offset: 4,

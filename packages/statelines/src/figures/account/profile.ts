@@ -41,7 +41,7 @@ const CZ = ZB + CARD.b;
 const AV = { u: -20, z: ZT - 40, r: 13 };
 
 /** A profile card with an avatar. Use for onboarding, account setup and profile photos. */
-export const profile = defineFigure({
+export const profile = /*#__PURE__*/ defineFigure({
   name: "Profile",
   label: "A profile card: cover photo, avatar, name, stats and a follow button",
   offset: 26,

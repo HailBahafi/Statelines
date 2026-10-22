@@ -26,7 +26,7 @@ function item(scene: Scene, k: number, x: number, y: number, z: number, tone: To
 }
 
 /** Items drop into a cart. Use for carts, baskets, saved items and orders. `count`: items, 1–5. */
-export const cart = defineFigure({
+export const cart = /*#__PURE__*/ defineFigure({
   name: "Cart",
   label: "Items dropping into a wire shopping cart",
   offset: 12,

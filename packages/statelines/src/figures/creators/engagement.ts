@@ -24,7 +24,7 @@ function faceHeart(scene: Scene, x: number, y: number, z: number, size: number, 
 }
 
 /** A social post on a phone, with hearts floating up off it. Use for engagement and post analytics. */
-export const engagement = defineFigure({
+export const engagement = /*#__PURE__*/ defineFigure({
   name: "Engagement",
   label: "A social post on a phone with hearts floating up",
   offset: 30,

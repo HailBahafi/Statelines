@@ -20,7 +20,7 @@ const CW = 16, CH = 12;
 const RINGS = [-36, -20, -4, 12, 28, 44].map(u => u - 4);
 
 /** A month of days with one picked. Use for booking, scheduling, date pickers and deadlines. */
-export const calendar = defineFigure({
+export const calendar = /*#__PURE__*/ defineFigure({
   name: "Calendar",
   label: "A month of days with one picked",
   offset: 28,

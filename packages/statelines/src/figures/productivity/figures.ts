@@ -57,7 +57,7 @@ const KCOL = [-38, 0, 38];
 const kSlot = (i: number): number => 59 - i * 14.5;
 
 /** Cards sliding across columns on a board. Use for kanban boards, pipelines and task status. `count`: cards per column, 1–3. */
-export const kanban = defineFigure({
+export const kanban = /*#__PURE__*/ defineFigure({
   name: "Kanban",
   label: "Cards moving across three columns",
   offset: 12,
@@ -128,7 +128,7 @@ export const kanban = defineFigure({
 });
 
 /** A checklist that ticks off line by line. Use for to-dos, onboarding steps and task completion. `count`: items, 2–5. */
-export const todo = defineFigure({
+export const todo = /*#__PURE__*/ defineFigure({
   name: "Todo",
   label: "A checklist ticking off items",
   offset: -16,
@@ -194,7 +194,7 @@ export const todo = defineFigure({
 const PL = Math.hypot(26, 70);
 
 /** A calendar week with blocks being placed. Use for scheduling, planners and time blocks. */
-export const planner = defineFigure({
+export const planner = /*#__PURE__*/ defineFigure({
   name: "Planner",
   label: "Blocks placed on a desk calendar's week",
   offset: -4,
@@ -261,7 +261,7 @@ export const planner = defineFigure({
 });
 
 /** A stopwatch counting down. Use for focus sessions, countdowns and time tracking. */
-export const timer = defineFigure({
+export const timer = /*#__PURE__*/ defineFigure({
   name: "Timer",
   label: "A stopwatch counting down",
   offset: 0,
@@ -331,7 +331,7 @@ export const timer = defineFigure({
 const sig = (t: number): Vec3 => [-28 + 42 * t + 3 * Math.sin(9 * Math.PI * t), 25 - 4 * Math.sin(9 * Math.PI * t + 0.8) * (1 - 0.3 * t), 6.15];
 
 /** A contract being signed with a fountain pen. Use for e-signatures, contracts and approvals. */
-export const sign = defineFigure({
+export const sign = /*#__PURE__*/ defineFigure({
   name: "Sign",
   label: "A document being signed",
   offset: -12,
@@ -392,7 +392,7 @@ export const sign = defineFigure({
 });
 
 /** A notebook being written in and closing. Use for notes, drafts, saving and journaling. */
-export const notes = defineFigure({
+export const notes = /*#__PURE__*/ defineFigure({
   name: "Notes",
   label: "A notebook being written in and closed",
   offset: -14,
@@ -488,7 +488,7 @@ function turned(scene: Scene, o: Vec3, a: number, x0: number, x1: number, u0: nu
 }
 
 /** A folder of files being archived. Use for archiving, cleanup and retention. `count`: files, 1–4. */
-export const archive = defineFigure({
+export const archive = /*#__PURE__*/ defineFigure({
   name: "Archive",
   label: "Files being filed into an archive box",
   offset: 24,
@@ -551,7 +551,7 @@ export const archive = defineFigure({
 });
 
 /** A parcel being packed into a shipping box. Use for fulfilment, packing and bulk operations. */
-export const pack = defineFigure({
+export const pack = /*#__PURE__*/ defineFigure({
   name: "Pack",
   label: "A parcel dropping into a box",
   offset: 14,
@@ -629,7 +629,7 @@ function pushpin(scene: Scene, x: number, y: number, z: number, tone: Tone, opac
 }
 
 /** A pinned note with a pin dropping in. Use for pins, bookmarks and highlights. */
-export const pin = defineFigure({
+export const pin = /*#__PURE__*/ defineFigure({
   name: "Pin",
   label: "A big push pin pinning a paper note to a corkboard",
   offset: 8,
@@ -718,7 +718,7 @@ function partial(pts: readonly P2[], f: number): P2[] {
 }
 
 /** A whiteboard being drawn on, one stroke after another. Use for brainstorms, collaboration and drawing tools. */
-export const whiteboard = defineFigure({
+export const whiteboard = /*#__PURE__*/ defineFigure({
   name: "Whiteboard",
   label: "A whiteboard being drawn on",
   offset: 18,
@@ -819,7 +819,7 @@ const BACK = makePeak(-52, -44, 40, 66, [1, 0.9, 1.08, 0.95, 1, 0.92, 1.05]);
 const trail = (t: number): Vec3 => onPeak(MAIN, t * 0.95, Math.PI / 4 + 0.95 * (1 - 0.55 * t) * Math.sin(t * Math.PI * 3.5 - 0.6));
 
 /** A climber on a mountain trail to a summit flag. Use for milestones, goals and launches. */
-export const milestone = defineFigure({
+export const milestone = /*#__PURE__*/ defineFigure({
   name: "Milestone",
   label: "A walker climbing a winding trail up a mountain to plant a flag at the summit",
   offset: 4,

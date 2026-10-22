@@ -147,7 +147,7 @@ const altitude = (t: number): number => 13 + 38 * Math.pow(Math.sin(Math.PI * cl
 const onFloor = (pts: readonly Vec3[], z = 4.2): Vec3[] => pts.map(p => [p[0], p[1], z] as Vec3);
 
 /** A plane flying a route between two cities. Use for flights, trips and booking confirmations. */
-export const flight = defineFigure({
+export const flight = /*#__PURE__*/ defineFigure({
   name: "Flight",
   label: "A plane flying a route between two cities",
   offset: 10,
@@ -256,7 +256,7 @@ function mapPin(scene: Scene, tip: Vec3, fall: number, tone: Tone, opacity?: num
 }
 
 /** A map pin dropped on a map. Use for location, places and pickups. */
-export const locate = defineFigure({
+export const locate = /*#__PURE__*/ defineFigure({
   name: "Locate",
   label: "A map pin dropping onto a folded map",
   offset: 10,
@@ -308,7 +308,7 @@ export const locate = defineFigure({
 /* ------------------------------------------------------------------ Keycard */
 
 /** A hotel key card sliding into a door reader. Use for check-in, room access and bookings. */
-export const keycard = defineFigure({
+export const keycard = /*#__PURE__*/ defineFigure({
   name: "Keycard",
   label: "A key card sliding into a door lock",
   offset: 27,
@@ -390,7 +390,7 @@ export const keycard = defineFigure({
 /* ------------------------------------------------------------------ Luggage */
 
 /** A suitcase with a zip opening. Use for packing, trip planning and luggage. `count`: items, 1–4. */
-export const luggage = defineFigure({
+export const luggage = /*#__PURE__*/ defineFigure({
   name: "Luggage",
   label: "A suitcase with items going in",
   offset: 14,
@@ -524,7 +524,7 @@ export const luggage = defineFigure({
 /* ------------------------------------------------------------------ Passport */
 
 /** A passport with its stamp pressed. Use for identity, verification of travel documents, and entry. */
-export const passport = defineFigure({
+export const passport = /*#__PURE__*/ defineFigure({
   name: "Passport",
   label: "An open passport, photo page and visa page, with a rubber stamp landing",
   offset: 10,
@@ -621,7 +621,7 @@ const LANDS: readonly (readonly [number, number])[][] = [
 ];
 
 /** A globe turning with a marker. Use for worldwide reach, locales and global settings. */
-export const globe = defineFigure({
+export const globe = /*#__PURE__*/ defineFigure({
   name: "Globe",
   label: "A desk globe turning with a marker",
   offset: 10,
@@ -773,7 +773,7 @@ const LEAD: readonly (readonly [number, number])[] = [[-56, 12], [-56, 32], [-16
 const COACH: readonly (readonly [number, number])[] = [[-112, 12], [-112, 32], [-60, 32], [-60, 12]];
 
 /** A train passing along its track. Use for transit, travel progress and rail routes. */
-export const train = defineFigure({
+export const train = /*#__PURE__*/ defineFigure({
   name: "Train",
   label: "A train running along a track to a platform",
   offset: 10,
@@ -835,7 +835,7 @@ export const train = defineFigure({
 /* ------------------------------------------------------------------ Compass */
 
 /** A compass needle finding north. Use for navigation, direction and onboarding to a place. */
-export const compass = defineFigure({
+export const compass = /*#__PURE__*/ defineFigure({
   name: "Compass",
   label: "A pocket compass with its needle turning north",
   offset: 12,
@@ -922,7 +922,7 @@ export const compass = defineFigure({
 /* ------------------------------------------------------------------ Boarding */
 
 /** A boarding pass with a QR block. Use for tickets, check-in confirmations and boarding. */
-export const boarding = defineFigure({
+export const boarding = /*#__PURE__*/ defineFigure({
   name: "Boarding",
   label: "A boarding pass scanned at a gate",
   offset: 16,

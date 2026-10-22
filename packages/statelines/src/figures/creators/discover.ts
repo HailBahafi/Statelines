@@ -69,7 +69,7 @@ function lens(scene: Scene, u: number, z: number, tone: Tone, mag: Tone | null, 
 }
 
 /** A magnifier sweeps a grid of creator profiles on a monitor and pops the ones that fit. Use for creator search and discovery. */
-export const discover = defineFigure({
+export const discover = /*#__PURE__*/ defineFigure({
   name: "Discover",
   label: "A magnifier sweeping creator profiles on a monitor",
   offset: 14,

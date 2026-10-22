@@ -49,7 +49,7 @@ function file(scene: Scene, x: number, y: number, z: number, rot: number, tone: 
 }
 
 /** A file rises from a laptop into the cloud while the bar fills. Use for file, image and attachment uploads. */
-export const upload = defineFigure({
+export const upload = /*#__PURE__*/ defineFigure({
   name: "Upload",
   label: "A file rising from a laptop into a cloud",
   offset: 14,

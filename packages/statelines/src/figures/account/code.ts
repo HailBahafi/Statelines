@@ -9,7 +9,7 @@ const ROW_Y = 14;
 const LOCK = { x: 16, y: -40, w: 36, d: 20, h: 28 };
 
 /** Keys of a one-time code and the lock they open. Use for two-factor, phone and email verification. `count`: digits, 4–8. */
-export const code = defineFigure({
+export const code = /*#__PURE__*/ defineFigure({
   name: "Code",
   label: "Keys of a verification code and a lock",
   offset: -6,

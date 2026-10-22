@@ -18,7 +18,7 @@ const HANDLE: Vec3 = [0.94, 0.34, 0];
 const HX = at(HOLE.i), HY = at(HOLE.j);
 
 /** A magnifying glass searching a board for a missing tile. Use for 404s, missing pages and lost items. */
-export const notFound = defineFigure({
+export const notFound = /*#__PURE__*/ defineFigure({
   name: "NotFound",
   label: "A magnifying glass over a board with a missing tile",
   offset: 14,

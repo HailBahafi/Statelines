@@ -12,7 +12,7 @@ const LENGTH = 52;
 const LEDS = [-36, -22, -8, 6, 20];
 
 /** A Wi-Fi router with its antennas up. Use for connectivity, offline, reconnecting and network status. */
-export const connection = defineFigure({
+export const connection = /*#__PURE__*/ defineFigure({
   name: "Connection",
   label: "A Wi-Fi router with its antennas up and status lights",
   offset: 22,

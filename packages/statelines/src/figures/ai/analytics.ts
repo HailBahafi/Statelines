@@ -11,7 +11,7 @@ const GRID = [18, 34, 50, 66];
 const value = (i: number, n: number) => 22 + (34 * i) / Math.max(1, n - 1) + 7 * Math.sin(i * 2.1);
 
 /** A bar chart. Use for dashboards, reports, insights and "no data yet". `count`: bars, 3–10. */
-export const analytics = defineFigure({
+export const analytics = /*#__PURE__*/ defineFigure({
   name: "Analytics",
   label: "A bar chart",
   offset: 20,

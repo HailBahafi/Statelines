@@ -58,7 +58,7 @@ function halfHeart(scene: Scene, x: number, y: number, z: number, size: number, 
 }
 
 /** A brand and a creator with a match score between them. Use for creator matching and fit scores. */
-export const match = defineFigure({
+export const match = /*#__PURE__*/ defineFigure({
   name: "Match",
   label: "A brand card and a creator card fitting together under a heart",
   offset: 16,

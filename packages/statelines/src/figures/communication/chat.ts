@@ -68,7 +68,7 @@ const NEW = { side: 1, u0: -8, u1: 30 } as const;
 const TYPING = { side: -1, u0: -20, u1: 0 } as const;
 
 /** A conversation on a phone. Use for chat, comments, support and assistant replies. */
-export const chat = defineFigure({
+export const chat = /*#__PURE__*/ defineFigure({
   name: "Chat",
   label: "A messaging app on a phone",
   offset: 26,
