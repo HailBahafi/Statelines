@@ -1,36 +1,5 @@
 import { defineFigure } from "../../core/define";
 import type { Scene, Tone, Vec3 } from "../../engine/scene";
-import { frontArc } from "../shapes";
-
-type UZ = [number, number];
-
-/** A rounded rectangle on the vertical plane y, centred on (cx, cz): clockwise from the top-right corner. */
-function rounded(cx: number, y: number, cz: number, a: number, b: number, r: number, steps = 4): Vec3[] {
-  const out: Vec3[] = [];
-  const corners: UZ[] = [[cx + a - r, cz + b - r], [cx + a - r, cz - b + r], [cx - a + r, cz - b + r], [cx - a + r, cz + b - r]];
-  corners.forEach(([x, z], k) => {
-    for (let i = 0; i <= steps; i++) {
-      const t = Math.PI / 2 - (Math.PI / 2) * (k + i / steps);
-      out.push([x + r * Math.cos(t), y, z + r * Math.sin(t)]);
-    }
-  });
-  return out;
-}
-
-/** An upright slab with rounded corners whose face looks to the lower left. Returns the y of its face. */
-function slab(scene: Scene, cx: number, cy: number, cz: number, a: number, b: number, r: number, d: number, tone: Tone): number {
-  const face = cy + d / 2;
-  const front = rounded(cx, face, cz, a, b, r), back = rounded(cx, cy - d / 2, cz, a, b, r);
-  if (tone === "ghost") {
-    scene.panel(front, "ghost");
-    return face;
-  }
-  // The band above and to the right of the face: from the top-left corner round to the bottom-right one.
-  const idx = [15, 16, 17, 18, 19, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-  scene.panel([...idx.map(i => back[i]!), ...idx.slice().reverse().map(i => front[i]!)], tone);
-  scene.panel(front, tone);
-  return face;
-}
 
 
 type At = (u: number, v: number, z: number) => Vec3;
@@ -79,20 +48,20 @@ function flat(scene: Scene, cx: number, cy: number, z: number, w: number, d: num
 const MAX = 10;
 const PITCH = 5;
 const R = 14;
-/** The open wallet: the back half stands up from the fold, the front half lies on the plate. */
-const W = { x: -16, fold: -16, w: 100, d: 44, h: 5, r: 6 };
-const UP = { cz: 4 + W.d / 2 + 2, b: W.d / 2 + 2 };
-const STACK = [68, -2] as const;
+/** The closed bifold lies on the plate, its long side running across the view: centre, size, turn and the thickness of each half. */
+const W = { x: -12, y: 8, w: 104, d: 62, h: 6, r: 8, rot: -0.7 };
+const STACK = [64, -24] as const;
 /** Where a coin that slips off the stack rolls to. */
-const SLIPPED = [62, 46] as const;
-/** The card pockets on the standing half, back to front: the height of each pocket's top edge. */
-const POCKETS = [38, 30, 22];
+const SLIPPED = [34, 38] as const;
+/** The cards fanned out of the slots along the open edge: where each sits, its turn, and how far it sticks out. */
+const FAN = [[-30, 0.26, 18], [-20, 0.1, 24], [-9, -0.08, 27]] as const;
+const CARD = { w: 46, d: 30 };
 
-/** An open wallet with coins stacking beside it. Use for balances, credits, payouts and rewards. `count`: coins, 1–10. */
+/** A wallet stuffed with cards and cash, coins stacking beside it. Use for balances, credits, payouts and rewards. `count`: coins, 1–10. */
 export const wallet = /*#__PURE__*/ defineFigure({
   name: "Wallet",
-  label: "An open wallet with coins stacking into a balance",
-  offset: 10,
+  label: "A leather wallet with cards and banknotes sticking out, coins stacking into a balance",
+  offset: 6,
   setup: ({ spring }) => ({
     coins: Array.from({ length: MAX }, (_, k) => ({
       z: spring(k < 6 ? 4 + k * PITCH : 4 + k * PITCH + 40, 160, 20),
@@ -117,54 +86,49 @@ export const wallet = /*#__PURE__*/ defineFigure({
     const leather: Tone = empty ? "ghost" : state === "success" ? "ok" : "base";
     const ink: Tone = leather === "base" ? "muted" : leather;
 
-    scene.box(6, 0, 0, 176, 112, 4, "base");
+    scene.box(0, 0, 0, 176, 128, 4, "base");
 
-    // Bills stand in the long pocket behind the cards and show over the top; on success they rise further.
-    const B = m.bills.to(state === "success" ? 1 : 0).value;
-    if (!empty) {
-      for (const [k, du] of [[0, -6], [1, 5]] as const) {
-        const y = W.fold - W.h / 2 - 1 + k * 1.5, top = UP.cz + UP.b + 9 - k * 3 + B * (12 - k * 4);
-        scene.panel([[W.x + du - 40, y, top - 30], [W.x + du + 40, y, top - 30], [W.x + du + 40, y, top], [W.x + du - 40, y, top]], leather === "ok" ? "ok" : "base");
-        scene.polyline([[W.x + du - 36, y + 0.05, top - 12], [W.x + du - 36, y + 0.05, top - 3], [W.x + du + 36, y + 0.05, top - 3], [W.x + du + 36, y + 0.05, top - 12]], "faint");
-        if (k === 1) scene.panel(frontArc(W.x + du, y + 0.1, top - 8, 3.2, 0, Math.PI * 2, 12), ink);
+    // The lower half of the closed wallet.
+    const low = flat(scene, W.x, W.y, 4, W.w, W.d, W.h, W.r, leather, W.rot);
+    if (empty) {
+      scene.cylinder(sx, sy, 4, R, 4, "ghost");
+    } else {
+      const mid = 4 + W.h;
+      // Banknotes poke out of the open edge: further on success, pulled back in on error.
+      const B = m.bills.to(state === "success" ? 1 : state === "error" ? -0.9 : 0).value;
+      for (const [k, du, turn] of [[0, 18, 0.08], [1, 25, -0.05]] as const) {
+        const out = 21 + 16 * B - k * 4;
+        if (out < 0.5) continue;
+        const [bx, by] = low(du, -W.d / 2 + 18 - out, 0);
+        const bill = flat(scene, bx, by, mid + 0.1 + k * 0.6, 50, 36, 0.6, 1, leather === "ok" ? "ok" : "base", W.rot + turn);
+        const t = mid + 0.75 + k * 0.6;
+        scene.polyline([bill(-21, -4, t), bill(-21, -14, t), bill(21, -14, t), bill(21, -4, t)], "faint");
+        if (k === 1) scene.disc(...(bill(0, -8, t).slice(0, 2) as [number, number]), t, 4, ink);
       }
-    }
-
-    // The standing half, with its card pockets: each card's top edge shows above the pocket in front of it.
-    const face = slab(scene, W.x, W.fold - W.h / 2, UP.cz, W.w / 2, UP.b, W.r, W.h, leather);
-    const lift = m.card.to(state === "idle" ? ctx.hover * 6 : 0).value;
-    if (!empty) {
-      POCKETS.forEach((edge, k) => {
-        const y = face + 0.6 + k * 0.9, top = edge + 7 + (k === POCKETS.length - 1 ? lift : 0);
-        scene.panel(rounded(W.x, y, (top + 10) / 2, 36, (top - 10) / 2, 2.5, 2), "base");
-        scene.line([W.x - 31, y + 0.05, top - 3], [W.x - 20, y + 0.05, top - 3], "muted");
-        scene.panel([[W.x - 42, y + 0.4, 9], [W.x + 42, y + 0.4, 9], [W.x + 42, y + 0.4, edge], [W.x, y + 0.4, edge - 2.5], [W.x - 42, y + 0.4, edge]], leather);
+      // Cards fan out of the slots; on hover the front one slides a little further.
+      const slide = m.card.to(state === "idle" ? ctx.hover * 6 : 0).value;
+      FAN.forEach(([du, a, out0], i) => {
+        const out = out0 + (i === FAN.length - 1 ? slide : 0);
+        const [cx, cy] = low(du, -W.d / 2 + CARD.d / 2 - out, 0);
+        const z = mid + 0.2 + i * 1.1, card = flat(scene, cx, cy, z, CARD.w, CARD.d, 1, 3, "base", W.rot + a);
+        const t = z + 1.05;
+        if (i === FAN.length - 1) scene.polyline([card(-17, -10, t), card(-9, -10, t), card(-9, -4, t), card(-17, -4, t)], "muted", { closed: true });
+        else scene.line(card(-19, -9, t), card(19, -9, t), "faint", { bold: true });
       });
+      // The upper half, a little narrower at the open edge, with stitching round it.
+      const top = flat(scene, ...(low(0, 1.2, 0).slice(0, 2) as [number, number]), mid, W.w - 2, W.d - 2.4, W.h, W.r, leather, W.rot);
+      const t = mid + W.h + 0.05;
+      scene.polyline(outline(W.w - 10, W.d - 10, W.r - 3, 2).map(p => top(p.u, p.v, t)), "ghost", { closed: true });
+      // The strap that wraps round the end and closes with a snap.
+      const strap = flat(scene, ...(top(W.w / 2 - 9, 0, 0).slice(0, 2) as [number, number]), t, 26, 18, 1.4, 6, leather, W.rot);
+      const [px, py] = strap(5, 0, 0);
+      scene.cylinder(px, py, t + 1.4, 3.6, 1.6, leather);
     }
 
-    // The front half lies on the plate, an ID window with a photo on its face.
-    const P = flat(scene, W.x, W.fold + W.d / 2, 4, W.w, W.d, W.h, W.r, leather);
-    if (!empty) {
-      const t = 4 + W.h + 0.05;
-      scene.line(P(-W.w / 2 + 3, -W.d / 2 + 1, t), P(W.w / 2 - 3, -W.d / 2 + 1, t), ink);
-      // Stitching round the leather.
-      scene.polyline(outline(W.w - 6, W.d - 6, W.r - 2, 2).map(p => P(p.u, p.v, t)), "faint", { closed: true });
-      scene.polyline([P(-40, -14, t), P(40, -14, t), P(40, 16, t), P(-40, 16, t)], "muted", { closed: true });
-      scene.polyline([P(-36, -10, t), P(-14, -10, t), P(-14, 12, t), P(-36, 12, t)], "faint", { closed: true });
-      const head = P(-25, -1, t);
-      scene.disc(head[0], head[1], t, 4, "muted");
-      scene.arc(head[0] + 3, head[1] + 3, t, 8, Math.PI * 0.75, Math.PI * 1.25, "muted");
-      scene.line(P(-6, -6, t), P(30, -6, t), "muted", { bold: true });
-      scene.line(P(-6, 1, t), P(22, 1, t), "faint");
-      scene.line(P(-6, 8, t), P(26, 8, t), "faint");
-    }
-
-    if (empty) scene.cylinder(sx, sy, 4, R, 4, "ghost");
     m.coins.forEach((coin, k) => {
       const present = k < count;
       let z = present ? 4 + k * PITCH : 4 + k * PITCH + 40, dx = 0, dy = 0;
       if (k === slipped) { z = 4; dx = SLIPPED[0] - sx; dy = SLIPPED[1] - sy; }
-      if (state === "idle" && k === count - 1) z += ctx.hover * 6;
       const Z = coin.z.to(z).value, X = coin.x.to(dx).value, Y = coin.y.to(dy).value, O = coin.opacity.to(present ? 1 : 0).value;
       if (k === slipped) return;
       const isTop = k === (slipped >= 0 ? slipped - 1 : count - 1);
