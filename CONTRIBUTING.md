@@ -34,7 +34,7 @@ Choose patch, minor or major, and write one or two sentences. The pull request c
 
 ## Publishing
 
-Set `NPM_TOKEN` as a GitHub repository Actions secret with npm publishing rights for `statelines`. The release workflow fails early if it is missing and publishes with npm provenance.
+Set the npm token as the GitHub repository Actions secret `STATELINES`, with npm publishing rights for `statelines` and "bypass two-factor authentication" enabled. The release workflow fails early if it is missing and publishes with npm provenance.
 
 Normally, merging changesets to `main` opens a **Version Packages** pull request. Merging that pull request publishes the new version and creates a GitHub release. With no pending changesets, the workflow runs `pnpm release` directly: Changesets publishes each package version that is not already on npm. This also handles the initial `0.3.0` release without a version bump.
 
@@ -47,7 +47,7 @@ npm login
 pnpm release
 ```
 
-Create or sign in to your npm account and enable two-factor authentication. Create a granular token with read and write access for `statelines`, and save it only as the repository secret `NPM_TOKEN`. Before the first release, a maintainer must confirm `npm view statelines` returns 404. After merging to `main`, confirm the published version with `npm view statelines version`.
+Create or sign in to your npm account and enable two-factor authentication. Create a granular token with read and write access for `statelines`, with "bypass two-factor authentication" enabled, and save it only as the repository secret `STATELINES`. Before the first release, a maintainer must confirm `npm view statelines` returns 404. After merging to `main`, confirm the published version with `npm view statelines version`.
 
 ## Code style
 
