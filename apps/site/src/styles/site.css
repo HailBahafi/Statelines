@@ -278,11 +278,15 @@ td code { white-space: nowrap; }
   * { transition: none !important; }
 }
 
-/* ── Figures: compact header, shelf chips above the cards ── */
-.figures-head { padding-top: 32px; padding-bottom: 18px; }
+/* ── Figures: compact header, shelf filter in a side panel ── */
+.figures-head { padding-top: 32px; padding-bottom: 4px; }
 .figures-head h1 { font-size: clamp(26px, 3.2vw, 34px); }
 .figures-head p { margin-top: 6px; font-size: 15px; }
-.chips .chip-n { margin-left: 6px; }
+.browse { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 32px; align-items: start; padding-top: 20px; }
+.filters { position: sticky; top: calc(var(--top) + 20px); max-height: calc(100vh - var(--top) - 40px); overflow-y: auto; padding-bottom: 20px; }
+.chips-col { flex-direction: column; flex-wrap: nowrap; gap: 2px; padding-bottom: 0; }
+.chips-col .chip { display: flex; justify-content: space-between; align-items: center; border: 0; border-radius: var(--radius-sm); padding: 7px 10px; text-align: left; }
+.chips-col .chip[aria-pressed="true"] { background: var(--code); }
 .chip-n { font-variant-numeric: tabular-nums; font-size: 12.5px; color: var(--muted); }
 
 /* ── Home: big live cards ───────────────────────────── */
@@ -295,6 +299,10 @@ td code { white-space: nowrap; }
 .showcase-hint { color: var(--muted); font-size: 14px; margin: -12px 0 18px; }
 
 @media (max-width: 960px) {
+  .browse { grid-template-columns: 1fr; gap: 12px; }
+  .filters { position: static; max-height: none; overflow: visible; }
+  .chips-col { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+  .chips-col .chip { border: 1px solid var(--line-2); border-radius: 999px; padding: 5px 11px; gap: 8px; }
   .showcase { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) { .showcase { grid-template-columns: 1fr; } }

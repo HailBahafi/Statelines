@@ -39,7 +39,7 @@ for (const section of catalog) {
 }
 $("#cards").replaceChildren(...cards.map(c => c.element));
 
-// Shelf filter: a row of chips above the cards.
+// Shelf filter, one row per shelf in the side panel.
 const chips = $("#chips");
 const chip = (id: string, label: string, n: number) => {
   const button = h("button", { type: "button", class: "chip", "data-shelf": id, "aria-pressed": id === shelf ? "true" : "false" },
