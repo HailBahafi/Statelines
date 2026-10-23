@@ -480,155 +480,108 @@ export const firewall = /*#__PURE__*/ defineFigure({
 });
 
 /**
- * The handshake is drawn square to the viewer in (u, v) pixels. Each hand is laid out in its own
- * frame: `s` runs from the wrist toward the fingertips, `w` across the hand with + up. The right
- * person's hand is the mirror image, so the left hand shows its back and the right one its palm.
+ * The handshake is drawn square to the viewer in (u, v) pixels. Each arm is laid out in its own
+ * frame: `s` runs from the wrist toward the fingers, `w` across the arm with + up.
  */
-/** A tapering capsule from `b` (radius rb) to `e` (radius re): a thumb or a fingertip. */
-function digit(b: P2, e: P2, rb: number, re = rb): P2[] {
-  const a = Math.atan2(e[1] - b[1], e[0] - b[0]), pts: P2[] = [];
-  for (let i = 0; i <= 6; i++) { const t = a - Math.PI / 2 + (Math.PI * i) / 6; pts.push([e[0] + re * Math.cos(t), e[1] + re * Math.sin(t)]); }
-  for (let i = 0; i <= 6; i++) { const t = a + Math.PI / 2 + (Math.PI * i) / 6; pts.push([b[0] + rb * Math.cos(t), b[1] + rb * Math.sin(t)]); }
+/** The left hand, seen from its back: the fingers wrap over the other hand as four stacked tips. */
+const HAND_A: P2[] = (() => {
+  const pts: P2[] = [[0, -14], [0, 14], [20, 16]];
+  for (let k = 0; k < 4; k++) {
+    const c = 11.5 - 7.5 * k, t = 44 - 2.5 * k;
+    for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 - (Math.PI * i) / 6; pts.push([t - 3.75 + 3.75 * Math.cos(a), c + 3.75 * Math.sin(a)]); }
+  }
+  pts.push([18, -16.5]);
   return pts;
-}
-
-/**
- * Four fingers held together, little finger at the bottom: one outline with a rounded tip per
- * finger, and the seams between them. `tips` are lengths from the knuckles; the frame is turned
- * by `a` about the knuckle point `o`.
- */
-function fingers(o: P2, a: number, tips: readonly number[], band: number): { outline: P2[]; seams: [P2, P2][] } {
-  const c = Math.cos(a), s = Math.sin(a), r = band / 2;
-  const at = (u: number, w: number): P2 => [o[0] + u * c - w * s, o[1] + u * s + w * c];
-  const lo = (k: number) => -2 * band + k * band;
-  const outline: P2[] = [at(-5, lo(0))];
-  tips.forEach((t, k) => {
-    for (let i = 0; i <= 6; i++) { const q = -Math.PI / 2 + (Math.PI * i) / 6; outline.push(at(t - r + r * Math.cos(q), lo(k) + r + r * Math.sin(q))); }
-  });
-  outline.push(at(-5, lo(4)));
-  const seams = [0, 1, 2].map((k): [P2, P2] => [at(2, lo(k + 1)), at(Math.min(tips[k]!, tips[k + 1]!) - r, lo(k + 1))]);
-  return { outline, seams };
-}
-
-/** An open hand offered for the shake: thumb up, four fingers held together and pointing ahead. */
-const OPEN = {
-  thumb: digit([6, 7], [21, 18.5], 5, 3.5),
-  palm: [[-9, -9], [-9, 9], [4, 11], [14, 12], [22, 11.6], [22, -12], [8, -12], [-2, -10.5]] as P2[],
-  fingers: fingers([20, -0.4], 0, [17, 23, 26, 24], 5.7),
-};
-/**
- * The clasp, laid out between the two wrists (u from -36 to 36), back to front: the right palm,
- * its fingers passing under the left hand, the left hand, the right fingertips curling over its
- * edge, the left fingers wrapped down across the right palm, and the right thumb over the knuckles.
- */
-const CLASP = {
-  palmB: [[44, -9], [44, 9], [30, 10], [10, 11.5], [-6, 11], [-8, -11], [10, -14], [30, -12]] as P2[],
-  under: [[-10, -8], [-26, -8.5], [-31, -12], [-27, -15.5], [-10, -15]] as P2[],
-  palmA: [[-44, -9], [-44, 9], [-30, 12], [-10, 13.5], [-1, 9], [-2, -9], [-10, -12.5], [-30, -12]] as P2[],
-  tipsB: [digit([-28, -15], [-27, -8], 2.8), digit([-22, -15.5], [-21, -8.5], 2.8), digit([-16, -15], [-15, -9], 2.7)],
-  fingersA: fingers([-4, 1], -0.8, [12, 17, 20, 19], 5.6),
-  thumbB: digit([16, 10], [-14, 15], 5.5, 4),
-};
-/** The shirt cuff showing past the jacket sleeve, in the arm's frame (s = 0 at the wrist). */
-const SHIRT: P2[] = [[-11, -10], [4, -10], [4, 10], [-11, 10]];
+})();
+/** The right hand: palm and fingers reaching under the left hand. */
+const HAND_B: P2[] = [[0, -14], [0, 14], [24, 14.5], [31, 8], [55, -1], [58, -8], [54, -16], [20, -17]];
+/** The right thumb, lying over the left hand's knuckles: a capsule from base to tip. */
+const THUMB: P2[] = (() => {
+  const b: P2 = [12, 8.5], e: P2 = [40, 15.5], r = 5;
+  const a = Math.atan2(e[1] - b[1], e[0] - b[0]), pts: P2[] = [];
+  for (let i = 0; i <= 8; i++) { const t = a - Math.PI / 2 + (Math.PI * i) / 8; pts.push([e[0] + r * Math.cos(t), e[1] + r * Math.sin(t)]); }
+  for (let i = 0; i <= 8; i++) { const t = a + Math.PI / 2 + (Math.PI * i) / 8; pts.push([b[0] + r * 1.2 * Math.cos(t), b[1] + r * 1.2 * Math.sin(t)]); }
+  return pts;
+})();
+const CUFF: P2[] = [[-9, -16.5], [0, -16.5], [0, 16.5], [-9, 16.5]];
 
 /** Two hands meeting in a handshake. Use for OAuth, connecting accounts and trusted links. */
 export const handshake = /*#__PURE__*/ defineFigure({
   name: "Handshake",
   label: "Two hands in sleeves reaching in from each side and clasping",
   offset: 18,
-  setup: ({ spring }) => ({ gap: spring(34, 140, 16), droop: spring(0, 110, 12), lift: spring(0, 120, 14) }),
+  setup: ({ spring }) => ({ gap: spring(22, 140, 16), droop: spring(0, 110, 12), lift: spring(0, 120, 14) }),
   draw(ctx, m) {
     const { scene, state } = ctx;
     const shake = ctx.shake(), empty = state === "empty";
-    let gap = 34 - ctx.hover * 8, pump = 0;
+    let gap = 22 - ctx.hover * 8, pump = 0;
     if (state === "loading") {
       const q = ctx.loop(1.8);
-      gap = 34 * (1 - smoothstep(q / 0.25)) + 34 * smoothstep((q - 0.84) / 0.16);
-      pump = 6 * Math.sin((q - 0.25) * Math.PI * 7) * bump((q - 0.25) / 0.55);
+      gap = 22 * (1 - smoothstep(q / 0.3)) + 22 * smoothstep((q - 0.82) / 0.18);
+      pump = 6 * Math.sin(q * Math.PI * 6) * bump((q - 0.28) / 0.55);
       m.gap.set(gap);
     }
     if (state === "success") gap = 0;
-    if (state === "error") gap = 40;
-    const G = Math.max(0, m.gap.to(gap).value), Dr = m.droop.to(state === "error" ? 1 : 0).value;
+    if (state === "error") gap = 34;
+    const G = m.gap.to(gap).value, Dr = m.droop.to(state === "error" ? 1 : 0).value;
     const Lf = m.lift.to(state === "success" ? 1 : 0).value;
-    const CV = 46 + pump + 5 * Lf, K = 1.5, clasped = G < 4;
+    const CV = 50, K = 1.45;
     const hand: Tone = empty ? "ghost" : state === "loading" ? "hi" : state === "idle" ? "base" : ctx.verdict();
     const cloth: Tone = empty ? "ghost" : "base";
-    const detail: Tone = hand === "base" ? "muted" : hand;
 
     scene.box(0, 0, 0, 128, 128, 4, "base");
     // The hands' shadow on the plate.
     if (!empty) {
       const [x, y] = facing(0, 0, 4, 0, 0);
-      scene.disc(x + 4, y + 4, 4.05, 24 - Math.min(G, 30) * 0.2, "faint", { fill: true, opacity: 0.5 });
+      scene.disc(x + 4, y + 4, 4.05, 26 - Math.min(G, 30) * 0.25, "faint", { fill: true, opacity: 0.5 });
     }
-    const place = (u: number, v: number, depth: number): Vec3 => {
-      const q = facing(0, 0, 4, u, v);
-      return [q[0] + depth, q[1] + depth, q[2]];
+    // Each arm reaches in from the edge of the frame: from its elbow end E to its wrist.
+    const arm = (E: P2, wrist: P2, side: 1 | -1) => {
+      const dx = wrist[0] - E[0], dy = wrist[1] - E[1], L = Math.hypot(dx, dy), d: P2 = [dx / L, dy / L];
+      const n: P2 = side === 1 ? [-d[1], d[0]] : [d[1], -d[0]];
+      return { L, at: (p: P2, depth = 0): Vec3 => {
+        const u = wrist[0] + K * (p[0] * d[0] + p[1] * n[0]), v = wrist[1] + K * (p[0] * d[1] + p[1] * n[1]);
+        const q = facing(0, 0, 4, u, v);
+        return [q[0] + depth, q[1] + depth, q[2]];
+      } };
     };
-    const solid = (pts: readonly P2[], at: (p: P2, d: number) => Vec3, tone: Tone) => {
+    const A = arm([-106, 8], [-44 - G / 2, CV + pump + 4 * Lf], 1);
+    const B = arm([106, 8], [47 + G / 2 + shake, CV + pump + 4 * Lf - 30 * Dr], -1);
+    const solid = (at: (p: P2, d?: number) => Vec3, pts: readonly P2[], tone: Tone) => {
       if (tone === "ghost") { scene.polyline(pts.map(p => at(p, 0)), "ghost", { closed: true }); return; }
-      scene.panel(pts.map(p => at(p, -2)), tone);
+      scene.panel(pts.map(p => at(p, -2.6)), tone);
       scene.panel(pts.map(p => at(p, 0)), tone);
     };
-    // The wrists, and each hand's frame: B is mirrored and, when it is pulled back, tips down.
-    const WA: P2 = [-(36 + G / 2) * K, CV], WB: P2 = [(36 + G / 2) * K + shake, CV - 26 * Dr];
-    // An open hand turns part of the way toward its forearm's slope.
-    const EA: P2 = [-110, 20], EB: P2 = [110, 20];
-    const tA = 0.45 * Math.atan2(WA[1] - EA[1], WA[0] - EA[0]), tB = 0.45 * Math.atan2(WB[1] - EB[1], EB[0] - WB[0]) - 0.4 * Dr;
-    const frame = (W: P2, t: number, mirror: number) => (p: P2, d = 0) =>
-      place(W[0] + mirror * K * (p[0] * Math.cos(t) - p[1] * Math.sin(t)), W[1] + K * (p[0] * Math.sin(t) + p[1] * Math.cos(t)), d);
-    const handA = frame(WA, tA, 1), handB = frame(WB, tB, -1);
-    const clasp = (p: P2, d = 0) => place(K * p[0], CV + K * p[1], d);
+    // The sleeve, rounded at the elbow, which rests on the plate.
+    const sleeve = (L: number): P2[] => [[-9, -14.5], [-L / K, -16],
+      ...Array.from({ length: 9 }, (_, i): P2 => { const a = -Math.PI / 2 - ((i + 1) / 10) * Math.PI; return [-L / K + 16 * Math.cos(a), 16 * Math.sin(a)]; }),
+      [-L / K, 16], [-9, 14.5]];
+    const fold = (L: number): [P2, P2] => [[-0.35 * L / K, 7], [-0.7 * L / K, 9]];
+    const crease: Tone = "faint";
 
-    if (clasped) {
-      solid(CLASP.palmB, clasp, hand);
-      solid(CLASP.under, clasp, hand);
-      solid(CLASP.palmA, clasp, hand);
-      CLASP.tipsB.forEach(t => solid(t, clasp, hand));
-      solid(CLASP.fingersA.outline, clasp, hand);
-      solid(CLASP.thumbB, clasp, hand);
-      if (!empty) {
-        CLASP.fingersA.seams.forEach(([a, b]) => scene.line(clasp(a), clasp(b), detail));
-        scene.line(clasp([-36, 2]), clasp([-12, 6]), "faint");
-        scene.line(clasp([-36, -3]), clasp([-12, -2]), "faint");
-        // The thumb's joint and nail.
-        scene.line(clasp([1, 16.5]), clasp([2, 8.5]), detail);
-        scene.polyline([clasp([-8, 17.4]), clasp([-12, 17]), clasp([-12.5, 13.4]), clasp([-8.5, 13])], detail);
-      }
-    } else {
-      for (const [at, back] of [[handB, false], [handA, true]] as const) {
-        solid(OPEN.thumb, at, hand);
-        solid(OPEN.palm, at, hand);
-        solid(OPEN.fingers.outline, at, hand);
-        if (empty) continue;
-        OPEN.fingers.seams.forEach(([a, b]) => scene.line(at(a), at(b), detail));
-        // A tendon on the back of the hand, or the crease across the palm.
-        if (back) scene.line(at([0, 3]), at([14, 5]), "faint");
-        else scene.polyline([at([0, 6]), at([10, 1]), at([19, 3])], "faint");
-      }
+    // The right arm first: its hand passes behind the left hand's fingers.
+    solid(B.at, sleeve(B.L), cloth);
+    solid(B.at, CUFF, cloth);
+    solid(B.at, HAND_B, hand);
+    if (!empty) {
+      scene.line(B.at(fold(B.L)[0], 0.05), B.at(fold(B.L)[1], 0.05), crease);
+      // The fingers that reach under the other hand.
+      for (const w of [-4, -10]) scene.line(B.at([30, w + 4], 0.05), B.at([52, w], 0.05), hand === "base" ? "muted" : hand);
     }
-
-    // Each arm reaches in from the edge of the frame: from its elbow E to its wrist.
-    const arm = (E: P2, W: P2, side: 1 | -1) => {
-      const dx = W[0] - E[0], dy = W[1] - E[1], L = Math.hypot(dx, dy) / K, d: P2 = [dx / L / K, dy / L / K];
-      const n: P2 = side === 1 ? [-d[1], d[0]] : [d[1], -d[0]];
-      return { L, at: (p: P2, depth = 0): Vec3 => place(W[0] + K * (p[0] * d[0] + p[1] * n[0]), W[1] + K * (p[0] * d[1] + p[1] * n[1]), depth) };
-    };
-    // The jacket sleeve tapers from the elbow, which rests on the plate, to its hem above the cuff.
-    const jacket = (L: number): P2[] => [[-5, -11.5], [-L, -12.5],
-      ...Array.from({ length: 9 }, (_, i): P2 => { const a = -Math.PI / 2 - ((i + 1) / 10) * Math.PI; return [-L + 11 * Math.cos(a), 12.5 * Math.sin(a)]; }),
-      [-L, 12.5], [-5, 11.5]];
-    for (const A of [arm(EB, WB, -1), arm(EA, WA, 1)]) {
-      solid(SHIRT, A.at, cloth);
-      if (!empty) scene.panel(ring2(-4, -4.5, 1.6, 8).map(p => A.at(p, 0.05)), "muted");
-      solid(jacket(A.L), A.at, cloth);
-      if (empty) continue;
-      scene.line(A.at([-10, -11.5], 0.05), A.at([-10, 11.5], 0.05), "faint");
-      for (const s of [-14, -18, -22]) scene.panel(ring2(s, -8, 1.3, 8).map(p => A.at(p, 0.05)), "muted");
-      scene.line(A.at([-0.4 * A.L, 7]), A.at([-0.7 * A.L, 9]), "faint");
+    solid(A.at, sleeve(A.L), cloth);
+    solid(A.at, CUFF, cloth);
+    solid(A.at, HAND_A, hand);
+    if (!empty) {
+      scene.line(A.at(fold(A.L)[0], 0.05), A.at(fold(A.L)[1], 0.05), crease);
+      for (let k = 0; k < 3; k++) {
+        const w = 11.5 - 7.5 * k - 3.75;
+        scene.line(A.at([24, w], 0.05), A.at([40 - 2.5 * k, w], 0.05), hand === "base" ? "muted" : hand);
+      }
+      scene.line(A.at([20, 15.5], 0.05), A.at([18, -16], 0.05), "faint");
     }
+    // The right thumb lies over the left hand.
+    solid(B.at, THUMB, hand);
+    if (!empty) scene.line(B.at([33.5, 18.5], 0.05), B.at([35.5, 14], 0.05), hand === "base" ? "muted" : hand);
   },
 });
 

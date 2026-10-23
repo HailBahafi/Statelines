@@ -206,6 +206,6 @@ Figures the owner still found generic after the audit of all 101, redesigned aro
 
 ## Fourth pass
 
-- Handshake: hands redrawn as real hands (open hand with thumb up and four fingers held together with seams and staggered tips; clasp with the left fingers wrapped down across the right palm, the right thumb over the knuckles and the right fingertips curling under), suit sleeves that taper to a hem with three buttons over a shirt cuff with a cufflink; idle offers open hands, loading closes and pumps, success clasps and lifts, error pulls one hand back and down. Open: the clasp is small at 200 px and the arms take much of the frame.
+- Handshake: a redesign (open hands, clasp, suit sleeves) was tried and reverted at the owner's request; the third-pass drawing is back. Open: still reads as gloves.
 - Wallet: closed leather bifold lying flat at an angle (two stitched layers, strap with a snap stud round the end), three cards fanned out of the slots and two banknotes sticking out of the open edge, coins stacking beside it; success pushes the notes further out, error pulls them in and a coin slips off; count and progress unchanged.
 - Table: an upright monitor on a stand showing a spreadsheet (formula bar with function button, column-letter header, row numbers, grid, a selected cell with heavy border and fill handle); rows type in one by one, success closes a total in the last column, error juts the bad row out past the monitor edge in err; count and progress unchanged.
