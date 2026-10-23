@@ -1,5 +1,5 @@
 import "../styles/site.css";
-import { FIGURE_STATES, type FigureInstance, type FigureState } from "statelines";
+import type { FigureInstance, FigureState } from "statelines";
 import { catalog, type Entry } from "../data/catalog";
 import { slugOf } from "../data";
 import { applyStoredTheme, mountFooter, mountHeader } from "../ui/shell";
@@ -14,7 +14,7 @@ interface Card { entry: Entry; shelf: string; element: HTMLElement; instance: Fi
 
 const params = new URLSearchParams(location.search);
 // The page opens in loading: every figure runs slowly, and hovering a card plays its whole story.
-let state: FigureState = "loading";
+const state: FigureState = "loading";
 let shelf = catalog.some(s => s.id === params.get("shelf")) ? params.get("shelf") ?? "all" : "all";
 
 const cards: Card[] = [];
@@ -39,22 +39,7 @@ for (const section of catalog) {
 }
 $("#cards").replaceChildren(...cards.map(c => c.element));
 
-// State switch: every figure moves together, staggered so the page breathes.
-const stateGroup = $("#states");
-for (const s of FIGURE_STATES) {
-  const button = h("button", { type: "button", "data-state": s, "aria-pressed": s === state ? "true" : "false" }, s);
-  button.addEventListener("click", () => setState(s));
-  stateGroup.append(button);
-}
-
-function setState(next: FigureState): void {
-  state = next;
-  stateGroup.querySelectorAll<HTMLButtonElement>("button").forEach(b =>
-    b.setAttribute("aria-pressed", String(b.dataset.state === next)));
-  cards.forEach((card, i) => setTimeout(() => card.flow.setState(next), (i % 10) * 22));
-}
-
-// Shelf filter, one row per shelf in the side panel.
+// Shelf filter: a row of chips above the cards.
 const chips = $("#chips");
 const chip = (id: string, label: string, n: number) => {
   const button = h("button", { type: "button", class: "chip", "data-shelf": id, "aria-pressed": id === shelf ? "true" : "false" },
