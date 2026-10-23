@@ -9,8 +9,8 @@ const all = Object.entries(figures) as [string, Figure<any>][];
 
 describe("every figure", () => {
   it("ships every figure with a unique name", () => {
-    expect(all.length).toBe(101);
-    expect(new Set(all.map(([, f]) => f.definition.name)).size).toBe(101);
+    expect(all.length).toBe(100);
+    expect(new Set(all.map(([, f]) => f.definition.name)).size).toBe(100);
   });
 
   for (const [key, figure] of all) {

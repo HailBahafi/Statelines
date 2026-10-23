@@ -4,12 +4,12 @@ Figures for the moments every app has.
 
 [Website](https://statelines.vercel.app) · [GitHub](https://github.com/HailBahafi/Statelines)
 
-Uploading a file, paying, typing a verification code, waiting on an AI reply, matching a creator to a brand. statelines is 101 isometric line drawings that show what your app is doing through a single `state` prop, and lean toward the pointer while they rest.
+Uploading a file, paying, typing a verification code, waiting on an AI reply, matching a creator to a brand. statelines is 100 isometric line drawings that show what your app is doing through a single `state` prop, and lean toward the pointer while they rest.
 
 - **One prop that means something.** `idle`, `loading`, `success`, `error`, `empty`. Wire it to your app's real state and the figure tells the story.
 - **Colour only when it matters.** Everything is grey line until a state means something: green for success, red for error.
 - **Yours to adjust.** Real progress, item counts, speed, colours, stroke and pointer, all as options. For deeper changes, copy a figure's file: every one is a short, readable TypeScript module.
-- **Light.** Zero dependencies. Importing one figure adds about 8 KB gzipped; all 101 together are about 83 KB.
+- **Light.** Zero dependencies. Importing one figure adds about 8 KB gzipped; all 100 together are about 83 KB.
 - **Idle means idle.** Every figure on the page shares one animation frame, and it stops when they have all settled. Off-screen figures cost nothing.
 - **Accessible.** Each figure is an image with a description you can replace, and `prefers-reduced-motion` is respected.
 
@@ -184,7 +184,7 @@ export const beacon = defineFigure({
 packages/statelines      the library (ESM, zero dependencies)
   src/engine          projection, springs, scene, the shared frame loop, styles
   src/core            types, the runner, DOM mounting, static rendering
-  src/figures         101 figures in thirteen shelves, plus shared shapes
+  src/figures         100 figures in thirteen shelves, plus shared shapes
   src/react           the React wrapper (generated)
   test                engine tests and a sweep over every figure, state and option
 apps/site             the website: home, figures, one page per figure, docs

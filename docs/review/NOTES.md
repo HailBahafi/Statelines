@@ -206,6 +206,6 @@ Figures the owner still found generic after the audit of all 101, redesigned aro
 
 ## Fourth pass
 
-- Handshake: a redesign (open hands, clasp, suit sleeves) was tried and reverted at the owner's request; the third-pass drawing is back. Open: still reads as gloves.
+- Handshake: removed from the library at the owner's request after two redesigns did not read well; the library now has 100 figures and Security 9.
 - Wallet: closed leather bifold lying flat at an angle (two stitched layers, strap with a snap stud round the end), three cards fanned out of the slots and two banknotes sticking out of the open edge, coins stacking beside it; success pushes the notes further out, error pulls them in and a coin slips off; count and progress unchanged.
 - Table: an upright monitor on a stand showing a spreadsheet (formula bar with function button, column-letter header, row numbers, grid, a selected cell with heavy border and fill handle); rows type in one by one, success closes a total in the last column, error juts the bad row out past the monitor edge in err; count and progress unchanged.

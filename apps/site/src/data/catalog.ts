@@ -95,7 +95,6 @@ export const catalog: Shelf[] = [
       entry("vault", "Vaults, secure storage and encrypted data", false),
       entry("fingerprint", "Biometric sign in and device trust", false),
       entry("firewall", "Network protection, blocked traffic and firewall rules", false),
-      entry("handshake", "OAuth, connecting accounts and trusted links", false),
       entry("radar", "Security alerts, monitoring and incidents", false),
       entry("compliance", "Onboarding security, audits and compliance", true, [2, 5]),
       entry("password", "Password entry, strength and masked input", false),

@@ -76,7 +76,6 @@ export const Key = /*#__PURE__*/ createComponent(figures.key);
 export const Vault = /*#__PURE__*/ createComponent(figures.vault);
 export const Fingerprint = /*#__PURE__*/ createComponent(figures.fingerprint);
 export const Firewall = /*#__PURE__*/ createComponent(figures.firewall);
-export const Handshake = /*#__PURE__*/ createComponent(figures.handshake);
 export const Radar = /*#__PURE__*/ createComponent(figures.radar);
 export const Compliance = /*#__PURE__*/ createComponent(figures.compliance);
 export const Password = /*#__PURE__*/ createComponent(figures.password);

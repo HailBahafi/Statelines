@@ -1,6 +1,6 @@
 # statelines
 
-> 101 isometric line figures for the moments every app has. SVG, zero dependencies, ESM. A function per figure and a React component per figure. Every figure takes the same five options, and `state` is the one that matters.
+> 100 isometric line figures for the moments every app has. SVG, zero dependencies, ESM. A function per figure and a React component per figure. Every figure takes the same five options, and `state` is the one that matters.
 
 ## Install
 
@@ -31,11 +31,11 @@ A figure fills its element's width at a 5:4 aspect ratio. As an empty state it w
 - `marks` (boolean, default true): the tick on success and the cross on error.
 - `interactive` (boolean, default true): answer the pointer.
 
-## Figures (101)
+## Figures (100)
 
 Creators: Discover, Match, Audience, Engagement, Audit, Outreach, Approval, Tracking, Payout, Roi.
 Media: Play, Clap, Waveform, Gallery, Vinyl, Rating, Like, Thread, Live.
-Security: Lock, Shield, Key, Vault, Fingerprint, Firewall, Handshake, Radar, Compliance, Password.
+Security: Lock, Shield, Key, Vault, Fingerprint, Firewall, Radar, Compliance, Password.
 Productivity: Kanban, Todo, Planner, Timer, Sign, Notes, Archive, Pack, Pin, Whiteboard, Milestone.
 Devices: Pair, Battery, Speaker, Watch, Camera, Mic, Printer, Rack, Satellite, Sync, Chip, Cursor.
 Wellness: Mood, SleepMoon, Streak, Breathe, Hydrate, Pulse, Sunrise, Rest, Badge, Journal.
