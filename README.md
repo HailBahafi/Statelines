@@ -4,6 +4,8 @@ Figures for the moments every app has.
 
 [Website](https://statelines.vercel.app) · [GitHub](https://github.com/HailBahafi/Statelines)
 
+<p align="center"><img src="docs/media/statelines.gif" alt="statelines figures going from loading to success" width="100%"></p>
+
 Uploading a file, paying, typing a verification code, waiting on an AI reply, matching a creator to a brand. statelines is 100 isometric line drawings that show what your app is doing through a single `state` prop, and lean toward the pointer while they rest.
 
 - **One prop that means something.** `idle`, `loading`, `success`, `error`, `empty`. Wire it to your app's real state and the figure tells the story.
