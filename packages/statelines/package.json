@@ -1,6 +1,6 @@
 {
   "name": "statelines",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "100 isometric line figures for the moments every app has: uploading, paying, signing in, matching creators, waiting on AI. One `state` prop, zero dependencies.",
   "license": "MIT",
   "type": "module",
